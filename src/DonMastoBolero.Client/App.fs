@@ -9,209 +9,126 @@ open Elmish
 open Microsoft.JSInterop
 open Microsoft.AspNetCore.Components
 open Microsoft.Extensions.Logging
+open System.Threading.Tasks
+open FileSystemFileHandle
+open System.Net.Http
+open System.IO.Compression
 
 module Command = Cmd
 
-type AuthorizationCode = AuthorizationCode of string
+type Page =
+    | [<EndPoint "/">] Home
+    | [<EndPoint "/open">] Open
 
-type ClientId = ClientId of string
-type ClientSecret = ClientSecret of string
+type FileName = FileName of string
+type Model = { page: Page; files: FileName array }
 
-type ClientCredential =
-    | Id of ClientId
-    | Secret of ClientSecret
+let initializeModel () = { page = Home; files = Array.empty }
 
-type ClientCredentialPair = ClientCredentialPair of clientId: ClientId * clientSecret: ClientSecret
-
-type CredentialsInput = 
-    | Valid of ClientCredentialPair
-    | Invalid of ClientCredentialPair
-type Model =
-    { clientId: ClientId option
-      clientSecret: ClientSecret option
-      authorizationCode: AuthorizationCode option }
-
-let initializeModel authorizationCode =
-    { clientId = None
-      clientSecret = None
-      authorizationCode = authorizationCode }
-
-type SaveClientCredentialError =
-    | SaveSecretError of exn
-    | SaveIdError of exn
-
-type LoadClientCredentialError =
-    | LoadSecretError of exn
-    | LoadIdError of exn
-
-type ClientCredentialError =
-    | SaveError of SaveClientCredentialError
-    | LoadError of LoadClientCredentialError
-
-type Error = CredentialError of ClientCredentialError
+type Error = LoadFilesError of exn
 
 type Message =
-    | SaveClientCredential of ClientCredential
-    | SetClientCredential of ClientCredential option
+    | SetPage of Page
+    | SetFiles of FileName array
     | LogError of Error
 
 let flip f x y = f y x
 
-let update (jsRuntime: IJSInProcessRuntime) (logger: ILogger) message model =
+let update (logger: ILogger) message model =
     match message with
-    | LogError (CredentialError error) ->
+    | SetPage (page) -> { model with page = page }, Command.none
+    | SetFiles (files) -> { model with files = files }, Command.none
+    | LogError (error) ->
         match error with
-        | ClientCredentialError.SaveError saveError ->
-            match saveError with
-            | SaveClientCredentialError.SaveIdError exception' ->
-                logger.LogError(exception', "An unexpected error occured while saving the client id")
-            | SaveClientCredentialError.SaveSecretError exception' ->
-                logger.LogError(exception', "An unexpected error occured while saving the client secret")
-        | ClientCredentialError.LoadError loadError ->
-            match loadError with
-            | LoadClientCredentialError.LoadIdError exception' ->
-                logger.LogError(exception', "And unexpected error occured while loading the client id")
-            | LoadClientCredentialError.LoadSecretError exception' ->
-                logger.LogError(exception', "And unexpected error occured while loading the client secret")
+        | LoadFilesError (``exception``) ->
+            logger.LogError(``exception``, "Error while loading files")
+            model, Command.none
 
-        model, Command.none
-    | SetClientCredential credential ->
-        match credential with
-        | Some value ->
-            match value with
-            | ClientCredential.Id id -> { model with clientId = Some id }, Command.none
-            | ClientCredential.Secret secret -> { model with clientSecret = Some secret }, Command.none
-        | None -> model, Command.none
-    | SaveClientCredential credential ->
-        //let save runtime (key, value, error : exn -> SaveClientCredentialError) = (LocalStorage.setItem key value runtime), error
-        let (pair, error) =
-            match credential with
-            | ClientCredential.Id (ClientId id) -> ("clientId", id), SaveClientCredentialError.SaveIdError
-            | ClientCredential.Secret (ClientSecret secret) ->
-                ("clientSecret", secret), SaveClientCredentialError.SaveSecretError
 
-        let save (key, value) =
-            LocalStorage.setItem key value jsRuntime
-
-        let logError =
-            error
-            >> SaveError
-            >> Error.CredentialError
-            >> LogError
-
-        model, Command.OfFunc.attempt save pair logError
-
-let view (model: Model) dispatch =
+let zipArchiveList (FileName name) =
+    
+    use archive = ZipFile.OpenRead name 
+    let fullNames = archive.Entries |> Seq.map (fun entry -> entry.FullName)
+    
     concat {
-        comp<PageTitle> { "Application Registration" }
+        Html.rawHtml name
+        Html.forEach fullNames (fun name -> p { name })
+    }
+    
+let openPage model =
+    concat {
+        comp<PageTitle> { "Passes" }
+        div { $"loaded {model.files.Length} files" }
 
-        main {
+        Html.forEach model.files zipArchiveList
 
-            Html.form {
-                on.submit (fun _ -> Console.WriteLine "submitted")
-                ``class`` "p-8 flex flex-col gap-2"
-
-                let dispatchSave = SaveClientCredential >> dispatch
-                let idValue = 
-                  model.clientId
-                    |> Option.map (function
-                        | ClientId id -> id)
-
-                ecomp<Components.OutlinedInput, _, _>
-                    { value = idValue
-                      label = "Client Id"
-                      id = "clientId"
-                      placeholder = None
-                      assistiveText = Components.AssistiveText.None }
-                    (Option.iter (
-                        string
-                        >> ClientId
-                        >> ClientCredential.Id
-                        >> dispatchSave
-                    )) {
-                    ``type`` "text"
-                }
-
-                let secretValue =
-                    model.clientSecret
-                    |> Option.map (function
-                        | ClientSecret secret -> secret)
-
-                ecomp<Components.OutlinedInput, _, _>
-                    { value = secretValue
-                      label = "Client Secret"
-                      id = "clientSecret"
-                      placeholder = None
-                      assistiveText = Components.AssistiveText.None }
-                    (Option.iter (
-                        string
-                        >> ClientSecret
-                        >> ClientCredential.Secret
-                        >> SaveClientCredential
-                        >> dispatch
-                    )) {
-                    ``type`` "text"
-                }
-
-                div {
-                    ``class`` "flex justify-end"
-
-                    let svgString =
-                        """
-                <svg class="h-4.5 w-4.5" viewBox="0 0 24 24" fill="#000000">
-                    <path d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                </svg>"""
-
-                    let icon = rawHtml svgString
-
-                    ecomp<Components.FilledButton, _, _> { label = "Submit"; icon = Some icon } (fun _ -> ()) {
-                        attr.``type`` "submit"
-                    }
-                }
-            }
-
-        }
     }
 
+let homePage=
+    // Jus the same for now
+    openPage
 
-let program (jsRuntime: IJSRuntime) logger authorizationCode =
+let view (model: Model) dispatch =
+    match model.page with
+    | Home -> homePage model
+    | Open -> openPage model
+
+let router = Router.infer SetPage (fun model -> model.page)
+
+
+
+let program (jsRuntime: IJSRuntime) logger (client: HttpClient) =
     let runtime = jsRuntime :?> IJSInProcessRuntime
-    let update = update runtime logger
-    let loadClientCredential = runtime |> flip LocalStorage.getItem
 
-    let loadClientId () =
-        loadClientCredential "clientId"
-        |> Option.map ClientId
+    let update = update logger
 
-    let loadClientSecret () =
-        loadClientCredential "clientSecret"
-        |> Option.map ClientSecret
+    let createAsync (index: int) (jsModule: IJSObjectReference) =
+        task {
+            let! fileHandle = jsModule.InvokeAsync<IJSObjectReference>("getLoadedFile", index)
+            //let! fileHandle = jsModule.InvokeAsync<IJSObjectReference>("loadedPasses.at", index)
+            let! file = fileHandle.InvokeAsync<IJSObjectReference>("getFile")
 
-    let credentialToMessage credential =
-        Option.map credential >> SetClientCredential
+            let! objectUrl = runtime.InvokeAsync<string>("URL.createObjectURL", file)
+            let! fileName = jsModule.InvokeAsync<string>("getAttribute", file, "name")
+            return objectUrl, fileName
+        }
 
-    let idToMessage = credentialToMessage Id
+    let loadFile (url: string, fileName: string) =
+        task {
+            use! browserStream = client.GetStreamAsync url
+            use fileStream = (IO.File.OpenWrite fileName)
+            do! browserStream.CopyToAsync fileStream
+            return FileName fileName
+        }
 
-    let logLoadError = LoadError >> CredentialError >> LogError
+    let loadFiles () =
+        task {
+            let! jsModule = runtime.InvokeAsync<IJSObjectReference>("import", "./module.js")
+            let! count = jsRuntime.InvokeAsync<int>("getStuff")
 
-    let idErrorToMessage = LoadIdError >> logLoadError
+            let! createTasks =
+                [| for index in 0 .. (count - 1) -> createAsync index jsModule |]
+                |> Task.WhenAll
 
-    let secretToMessage = credentialToMessage Secret
+            return! createTasks |> Array.map loadFile |> Task.WhenAll
+        }
 
-    let secretErrorToMessage = LoadSecretError >> logLoadError
 
-    let startCommand =
-        Command.batch [ Command.OfFunc.either loadClientId () idToMessage idErrorToMessage
-                        Command.OfFunc.either loadClientSecret () secretToMessage secretErrorToMessage ]
 
-    Program.mkProgram (fun _ -> initializeModel authorizationCode, startCommand) update view
 
-let indexOf (character: char) (string: char ReadOnlySpan) =
-    match string.IndexOf(character) with
-    | -1 -> None
-    | value -> Some value
 
+
+
+
+    //let startCommand =
+    //    Command.batch [ Command.OfFunc.either loadClientId () idToMessage idErrorToMessage
+    //                    Command.OfFunc.either loadClientSecret () secretToMessage secretErrorToMessage ]
+
+    let logError = LoadFilesError >> LogError
+    let startCommand = Command.OfTask.either loadFiles () SetFiles logError
+
+    Program.mkProgram (fun _ -> initializeModel (), startCommand) update view
+    |> Program.withRouter router
 
 
 type App() =
@@ -227,12 +144,8 @@ type App() =
     [<SupplyParameterFromQuery(Name = "code")>]
     member val AuthorizationCode = Unchecked.defaultof<string> with get, set
 
-    override this.Program =
-
-        let code =
-            this.AuthorizationCode
-            |> Option.ofObj
-            |> Option.map AuthorizationCode
+    [<Inject>]
+    member val HttpClient = Unchecked.defaultof<HttpClient> with get, set
 
 
-        program this.JSRuntime this.Logger code
+    override this.Program = program this.JSRuntime this.Logger this.HttpClient

@@ -6,12 +6,15 @@
     <title>PK PASS</title>
     <base href="/">
     <meta name="color-scheme" content="dark light">
-    
+
+    <!-- Make app installable -->
+    <link href="app.json.webmanifest" rel="manifest" />
+
     <!-- GoogleFonts: TODO self host -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
-   
+
     <!-- Tailwind CSS play CDN: TODO use proper build -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -21,7 +24,7 @@
             theme: {
                 extend: {
                     fontFamily: {
-                        'sans' : ['Roboto']
+                        'sans': ['Roboto']
                     },
                     lineHeight: {
                         'display-lg': '4rem',
@@ -159,6 +162,38 @@
 </head>
 <body>
     <div id="main">Loading...</div>
+    <script>
+
+        const loadedPasses = [];
+
+        const getLength = () => loadedPasses.length;
+        function getStuff() {
+            return loadedPasses.length;
+        }
+
+        if ('launchQueue' in window && 'files' in LaunchParams.prototype) {
+            console.info("File Handling API is supported! 🥳🎉");
+            launchQueue.setConsumer((launchParameters) => {
+                // Nothing to do when the queue is empty
+                if (!launchParameters.files.length) {
+                    console.info("File handling queue is empty. Don't need to handle files")
+
+                    return;
+                }
+
+                for (const fileHandle of launchParameters.files) {
+                    console.info("Received file!", fileHandle);
+                    // Add file to cache for app to pick up after it loaded
+                    loadedPasses.push(fileHandle);
+                }
+            })
+
+        } else {
+            console.info("Fle Handling API is not supported 😔. Maybe it is only in canary or dev chromium browser versions yet?");
+        }
+    </script>
     <script src="_framework/blazor.webassembly.js"></script>
+    <script>navigator.serviceWorker.register('service-worker.js');</script>
+
 </body>
 </html>
