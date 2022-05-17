@@ -7,8 +7,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{87F6C079-CBD
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "PkPass", "src\DonMastoBolero.Client\PkPass.fsproj", "{1481BBD6-A6DA-4912-A03A-134880D14701}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorApp1", "BlazorApp1\BlazorApp1.csproj", "{74B452BB-A259-429B-BFEB-CA8F25DBC308}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -31,18 +29,6 @@ Global
 		{1481BBD6-A6DA-4912-A03A-134880D14701}.Release|x64.Build.0 = Release|Any CPU
 		{1481BBD6-A6DA-4912-A03A-134880D14701}.Release|x86.ActiveCfg = Release|Any CPU
 		{1481BBD6-A6DA-4912-A03A-134880D14701}.Release|x86.Build.0 = Release|Any CPU
-		{74B452BB-A259-429B-BFEB-CA8F25DBC308}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{74B452BB-A259-429B-BFEB-CA8F25DBC308}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{74B452BB-A259-429B-BFEB-CA8F25DBC308}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{74B452BB-A259-429B-BFEB-CA8F25DBC308}.Debug|x64.Build.0 = Debug|Any CPU
-		{74B452BB-A259-429B-BFEB-CA8F25DBC308}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{74B452BB-A259-429B-BFEB-CA8F25DBC308}.Debug|x86.Build.0 = Debug|Any CPU
-		{74B452BB-A259-429B-BFEB-CA8F25DBC308}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{74B452BB-A259-429B-BFEB-CA8F25DBC308}.Release|Any CPU.Build.0 = Release|Any CPU
-		{74B452BB-A259-429B-BFEB-CA8F25DBC308}.Release|x64.ActiveCfg = Release|Any CPU
-		{74B452BB-A259-429B-BFEB-CA8F25DBC308}.Release|x64.Build.0 = Release|Any CPU
-		{74B452BB-A259-429B-BFEB-CA8F25DBC308}.Release|x86.ActiveCfg = Release|Any CPU
-		{74B452BB-A259-429B-BFEB-CA8F25DBC308}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
