@@ -3,6 +3,7 @@
 open System
 open System.Text
 open System.Text.Json
+
 type CssColor = CssColor of string
 
 //TODO barcodes in the barcodes array are allowed to have type PKBarcodeFormatCode128 but not the single barcode
@@ -10,8 +11,9 @@ type BarcodeFormat =
     | Qr
     | Pdf417
     | Aztec
-    
-type Barcode = Barcode of alternateText: string option * format: BarcodeFormat * message: string * messageEncoding: Encoding
+
+type Barcode =
+    | Barcode of alternateText: string option * format: BarcodeFormat * message: string * messageEncoding: Encoding
 
 type PassDefinition =
     | PassDefinition of
@@ -25,7 +27,8 @@ type PassDefinition =
         labelColor: CssColor option *
         // Deprecated since iOS 9 use barcodes instead
         barcode: Barcode option *
-        barcodes: Barcode array option
+        barcodes: Barcode array option *
+        relevanceDate : DateTimeOffset option
 
 type Field = Field of key: string * label: string * value: string
 
@@ -45,6 +48,7 @@ type TransitType =
     | Train
 // Boarding pass structure extends standard pass structure with a mandatory transit type
 type BoardingPassStructure = BoardingPassStructure of PassStructure * TransitType
+
 type Pass =
     | BoardingPass of PassDefinition * BoardingPassStructure
     | Coupon
@@ -52,7 +56,7 @@ type Pass =
     | Generic
     | StoredCard
 
-let deserializeBarcode (reader: Utf8JsonReader inref) =
+let private deserializeBarcode (reader: Utf8JsonReader byref) =
 
     let mutable format = Unchecked.defaultof<_>
     let mutable alternateText = None
@@ -63,12 +67,10 @@ let deserializeBarcode (reader: Utf8JsonReader inref) =
 
     let mutable lastProperty = None
 
-    // Read until end of object
+
     while reader.Read()
           && reader.TokenType <> JsonTokenType.EndObject do
         match reader.TokenType with
-        // Enter object
-//        | JsonTokenType.StartObject -> ()
         | JsonTokenType.PropertyName -> lastProperty <- reader.GetString() |> Option.ofObj
         | JsonTokenType.String ->
             match lastProperty with
@@ -96,7 +98,7 @@ let deserializeBarcode (reader: Utf8JsonReader inref) =
     Barcode(alternateText = alternateText, format = format, message = message, messageEncoding = messageEncoding)
 
 
-let deserializeField (reader: Utf8JsonReader inref) =
+let private deserializeField (reader: Utf8JsonReader byref) =
     let mutable key = Unchecked.defaultof<_>
     let mutable label = Unchecked.defaultof<_>
     let mutable value = Unchecked.defaultof<_>
@@ -123,7 +125,7 @@ let deserializeField (reader: Utf8JsonReader inref) =
 
     Field(key, label, value)
 
-let deserializeFields (reader: Utf8JsonReader inref) =
+let private deserializeFields (reader: Utf8JsonReader byref) =
     let mutable arrayValues = []
 
     while reader.Read()
@@ -132,7 +134,7 @@ let deserializeFields (reader: Utf8JsonReader inref) =
 
     arrayValues
 
-let deserializePassStructure (reader: Utf8JsonReader inref) =
+let private deserializePassStructure (reader: Utf8JsonReader byref) =
 
     let mutable headerFields = None
     let mutable primaryFields = None
@@ -164,7 +166,7 @@ let deserializePassStructure (reader: Utf8JsonReader inref) =
     PassStructure(auxiliaryFields, backFields, headerFields, primaryFields, secondaryFields)
 
 
-let deserializeBarcodes (reader: Utf8JsonReader inref) =
+let private deserializeBarcodes (reader: Utf8JsonReader byref) =
     let mutable arrayValues = []
 
     while reader.Read()
@@ -174,9 +176,10 @@ let deserializeBarcodes (reader: Utf8JsonReader inref) =
     arrayValues
 
 let deserializePass (data: byte ReadOnlySpan) =
-    let reader = Utf8JsonReader(data)
+    let mutable reader = Utf8JsonReader(data)
+
     let mutable description =
-            Unchecked.defaultof<_>
+        Unchecked.defaultof<_>
 
     let mutable formatVersion = 0
 
@@ -203,7 +206,9 @@ let deserializePass (data: byte ReadOnlySpan) =
     let mutable relevantDate = None
     let mutable lastProperty = None
 
-    while reader.Read() && reader.TokenType <> JsonTokenType.EndObject do
+    let mutable isPastFirstStart = false
+    while reader.Read()
+          && reader.TokenType <> JsonTokenType.EndObject do
         match reader.TokenType with
         | JsonTokenType.PropertyName -> lastProperty <- reader.GetString() |> Option.ofObj
         | JsonTokenType.String ->
@@ -236,7 +241,7 @@ let deserializePass (data: byte ReadOnlySpan) =
             | Some otherProperty -> failwith $"Unexpected non supported property {otherProperty}"
             | None ->
                 failwith
-                    $"Got {reader.TokenType} token type with value '{reader.GetInt64()}' but no property name proceeded this value"
+                    $"Got {reader.TokenType} token type with value '{reader.GetInt64()}' but no property name preceded this value"
 
             // Clean last property after we extracted the properties value
             lastProperty <- None
@@ -245,19 +250,29 @@ let deserializePass (data: byte ReadOnlySpan) =
             match lastProperty with
             | Some "barcode" -> barcode <- deserializeBarcode &reader |> Some
             | Some "eventTicket" ->
-                let structure = deserializePassStructure &reader
+                let structure =
+                    deserializePassStructure &reader
+
                 constructPass <- fun definition -> EventTicket(definition, structure)
             | Some otherProperty -> failwith $"Unexpected non supported property {otherProperty}"
-            | None -> failwith $"Got {reader.TokenType} token type but no property name proceeded this value"
+            // First object start is the root of the object
+            | None when not isPastFirstStart ->
+                // After this any object that starts without property is invalid
+                isPastFirstStart <- true
+            | None -> failwith $"Got {reader.TokenType} token type but no property name preceded this value"
 
             // Clean last property after we extracted the properties value
             lastProperty <- None
         // Next read advance will leave the object
         | JsonTokenType.StartArray ->
             match lastProperty with
-            | Some "barcodes" -> barcodes <- (deserializeBarcodes &reader) |> List.toArray |> Some
+            | Some "barcodes" ->
+                barcodes <-
+                    (deserializeBarcodes &reader)
+                    |> List.toArray
+                    |> Some
             | Some otherProperty -> failwith $"Unexpected non supported property {otherProperty}"
-            | None -> failwith $"Got {reader.TokenType} token type but no property name proceeded this value"
+            | None -> failwith $"Got {reader.TokenType} token type but no property name preceded this value"
             // Clean last property after we extracted the properties value
             lastProperty <- None
         // Next read advance will leave the object
@@ -274,8 +289,8 @@ let deserializePass (data: byte ReadOnlySpan) =
             foregroundColor,
             labelColor,
             barcode,
-            barcodes
+            barcodes,
+            relevantDate
         )
 
     constructPass definition
-    

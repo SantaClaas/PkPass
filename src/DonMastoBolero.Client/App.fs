@@ -63,7 +63,8 @@ let zipArchiveList (FileName name) =
 
             img { src dataUrl }
         | true, _ when Path.GetFileName file = "pass.json" ->
-            let pass = PassKit.readPass file
+            let data : byte ReadOnlySpan = File.ReadAllBytes file
+            let pass = PassKit.deserializePass data
             Console.WriteLine pass
             Html.empty()
         | _, _ -> p { file }
