@@ -1,11 +1,13 @@
 module PkPass.Client.App
 
 open System
+open System.Net.Mime
 open Microsoft.AspNetCore.Components.Web
 open Bolero
 open Bolero.Html
 open Bolero.Html.attr
 open Elmish
+open Microsoft.AspNetCore.StaticFiles
 open Microsoft.JSInterop
 open Microsoft.AspNetCore.Components
 open Microsoft.Extensions.Logging
@@ -13,6 +15,9 @@ open System.Threading.Tasks
 open FileSystemFileHandle
 open System.Net.Http
 open System.IO.Compression
+open System.IO
+open Microsoft.AspNetCore
+open PkPass
 
 module Command = Cmd
 
@@ -36,35 +41,49 @@ let flip f x y = f y x
 
 let update (logger: ILogger) message model =
     match message with
-    | SetPage (page) -> { model with page = page }, Command.none
-    | SetFiles (files) -> { model with files = files }, Command.none
-    | LogError (error) ->
+    | SetPage page -> { model with page = page }, Command.none
+    | SetFiles files -> { model with files = files }, Command.none
+    | LogError error ->
         match error with
-        | LoadFilesError (``exception``) ->
+        | LoadFilesError ``exception`` ->
             logger.LogError(``exception``, "Error while loading files")
             model, Command.none
 
-
 let zipArchiveList (FileName name) =
-    
-    use archive = ZipFile.OpenRead name 
-    let fullNames = archive.Entries |> Seq.map (fun entry -> entry.FullName)
-    
-    concat {
-        Html.rawHtml name
-        Html.forEach fullNames (fun name -> p { name })
-    }
-    
+    let fileToNode (file: string) =
+        match FileExtensionContentTypeProvider()
+                  .TryGetContentType(file)
+            with
+        | true, contentType when contentType.StartsWith "image/" ->
+            let data = File.ReadAllBytes file
+            let base64 = Convert.ToBase64String data
+
+            let dataUrl =
+                $"data:{contentType};base64,{base64}"
+
+            img { src dataUrl }
+        | true, _ when Path.GetFileName file = "pass.json" ->
+            let pass = PassKit.readPass file
+            Console.WriteLine pass
+            Html.empty()
+        | _, _ -> p { file }
+
+
+    let directoryName = name + " extracted"
+    ZipFile.ExtractToDirectory(name, directoryName)
+    let files = Directory.GetFiles directoryName
+    forEach files fileToNode
+
+
 let openPage model =
     concat {
         comp<PageTitle> { "Passes" }
         div { $"loaded {model.files.Length} files" }
 
         Html.forEach model.files zipArchiveList
-
     }
 
-let homePage=
+let homePage =
     // Jus the same for now
     openPage
 
@@ -73,12 +92,14 @@ let view (model: Model) dispatch =
     | Home -> homePage model
     | Open -> openPage model
 
-let router = Router.infer SetPage (fun model -> model.page)
+let router =
+    Router.infer SetPage (fun model -> model.page)
 
 
 
 let program (jsRuntime: IJSRuntime) logger (client: HttpClient) =
-    let runtime = jsRuntime :?> IJSInProcessRuntime
+    let runtime =
+        jsRuntime :?> IJSInProcessRuntime
 
     let update = update logger
 
@@ -96,7 +117,10 @@ let program (jsRuntime: IJSRuntime) logger (client: HttpClient) =
     let loadFile (url: string, fileName: string) =
         task {
             use! browserStream = client.GetStreamAsync url
-            use fileStream = (IO.File.OpenWrite fileName)
+
+            use fileStream =
+                (IO.File.OpenWrite fileName)
+
             do! browserStream.CopyToAsync fileStream
             return FileName fileName
         }
@@ -125,7 +149,9 @@ let program (jsRuntime: IJSRuntime) logger (client: HttpClient) =
     //                    Command.OfFunc.either loadClientSecret () secretToMessage secretErrorToMessage ]
 
     let logError = LoadFilesError >> LogError
-    let startCommand = Command.OfTask.either loadFiles () SetFiles logError
+
+    let startCommand =
+        Command.OfTask.either loadFiles () SetFiles logError
 
     Program.mkProgram (fun _ -> initializeModel (), startCommand) update view
     |> Program.withRouter router
@@ -148,4 +174,5 @@ type App() =
     member val HttpClient = Unchecked.defaultof<HttpClient> with get, set
 
 
-    override this.Program = program this.JSRuntime this.Logger this.HttpClient
+    override this.Program =
+        program this.JSRuntime this.Logger this.HttpClient

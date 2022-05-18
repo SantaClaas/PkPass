@@ -7,6 +7,7 @@
 	</PropertyGroup>
 	
 	<ItemGroup>
+		<Compile Include="PassKit.fs" />
 		<Compile Include="Attributes.fs" />
 		<Compile Include="Components.fs" />
 		<Compile Include="Interop\Module.fs" />
@@ -21,6 +22,7 @@
 		<PackageReference Include="Bolero" Version="0.*" />
 		<PackageReference Include="Bolero.Build" Version="0.*" />
 		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.*" />
+		<PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
 		<PackageReference Include="System.Net.Http.Json" Version="6.0.*" />
 	</ItemGroup>
 	

@@ -1,0 +1,55 @@
+{
+    "formatVersion": 1,
+    "serialNumber": "31219864",
+    "passTypeIdentifier": "pass.de.cineplex.booking",
+    "description": "Buchungsbestätigung: Phantastische Tierwesen: Dumbledores Geheimnisse (08.05.2022 20:20)",
+    "teamIdentifier": "YAUN25EF7Q",
+    "organizationName": "Cineplex Deutschland GmbH & Co. KG",
+    "foregroundColor": "rgb(255,255,255)",
+    "labelColor": "rgb(255,255,255)",
+    "barcode": {
+        "format": "PKBarcodeFormatQR",
+        "altText": "3740489598",
+        "message": "3740489598",
+        "messageEncoding": "UTF-8"
+    },
+    "barcodes": [
+        {
+            "format": "PKBarcodeFormatQR",
+            "altText": "3740489598",
+            "message": "3740489598",
+            "messageEncoding": "UTF-8"
+        }
+    ],
+    "eventTicket": {
+        "headerFields": [
+            {
+                "key": "performance_date",
+                "label": "08.05.2022",
+                "value": "20:20"
+            }
+        ],
+        "primaryFields": [
+            {
+                "key": "performance_title",
+                "label": "4 x Ticket",
+                "value": "Phantastische Tierwesen: Dumbledores Geheimnisse"
+            }
+        ],
+        "secondaryFields": [
+            {
+                "key": "auditorium_name",
+                "label": "Cineplex Münster",
+                "value": "Kino 7"
+            }
+        ],
+        "auxiliaryFields": [
+            {
+                "key": "seat_info",
+                "label": "Reihe/Sitz",
+                "value": "6/11,6/12,6/10,6/13"
+            }
+        ]
+    },
+    "relevantDate": "2022-05-08T18:20:00Z"
+}
