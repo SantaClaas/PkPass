@@ -1,7 +1,6 @@
 module PkPass.Client.App
 
 open System
-open System.Net.Mime
 open System.Text.Json
 open Microsoft.AspNetCore.Components.Web
 open Bolero
@@ -13,12 +12,9 @@ open Microsoft.JSInterop
 open Microsoft.AspNetCore.Components
 open Microsoft.Extensions.Logging
 open System.Threading.Tasks
-open FileSystemFileHandle
 open System.Net.Http
 open System.IO.Compression
 open System.IO
-open Microsoft.AspNetCore
-open PkPass
 open PkPass.PassKit
 
 module Command = Cmd

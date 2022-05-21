@@ -16,10 +16,13 @@ type BarcodeFormat =
 type Barcode =
     | Barcode of alternateText: string option * format: BarcodeFormat * message: string * messageEncoding: Encoding
 
+type LocalizableString = LocalizableString of string
+type LocalizableFormatString = LocalizableFormatString of string
+
 type PassDefinition =
-    { description: string
+    { description: LocalizableString
       formatVersion: int
-      organizationName: string
+      organizationName: LocalizableString
       passTypeIdentifier: string
       serialNumber: string
       teamIdentifier: string
@@ -30,20 +33,59 @@ type PassDefinition =
       barcodes: Barcode list option
       relevanceDate: DateTimeOffset option }
 
+type AttributedValue =
+    | HtmlAnchorTag of href: string * label: string
+    | Date of DateTimeOffset
+    | Number of int
+
+type FieldValue =
+    | LocalizableString of LocalizableString
+    | Date of DateTimeOffset
+    | Number of int
+
+type DataDetectorType =
+    | PhoneNumber
+    | Link
+    | Address
+    | CalendarEvent
+
+//TODO not allowed for primary fields or back fields
+type TextAlignment =
+    | Left
+    | Center
+    | Right
+    // Natural is default even though it is optional?
+    | Natural
+
 type Field =
-    { key: string
-      label: string
-      value: string }
+    { attributedValue: AttributedValue option
+      changeMessage: LocalizableFormatString option
+      dataDetectorTypes: DataDetectorType list option
+      key: string
+      label: LocalizableString option
+      value: FieldValue }
+    static member Default key value =
+        { attributedValue = None
+          changeMessage = None
+          dataDetectorTypes = None
+          key = key
+          value = value
+          label = None }
 
 type private FieldDeserializationState =
-    { key: string option
-      label: string option
-      value: string option }
-    static member Default = {
-        key = None
-        label = None
-        value = None
-    }
+    { attributedValue: AttributedValue option
+      changeMessage: LocalizableFormatString option
+      dataDetectorTypes: DataDetectorType list option
+      key: string option
+      label: LocalizableString option
+      value: FieldValue option }
+    static member Default =
+        { attributedValue = None
+          changeMessage = None
+          dataDetectorTypes = None
+          key = None
+          value = None
+          label = None }
 
 type DeserializationError =
     // A property that is required by definition is missing in the JSON
@@ -60,20 +102,19 @@ let private tryFinishFieldDeserialization (state: FieldDeserializationState) : R
         nameof state.key
         |> RequiredPropertyMissing
         |> Error
-    | { label = None } ->
-        nameof state.key
-        |> RequiredPropertyMissing
-        |> Error
     | { value = None } ->
         nameof state.key
         |> RequiredPropertyMissing
         |> Error
     | { key = Some key
-        label = Some label
+        label = label
         value = Some value } ->
         { Field.key = key
           Field.label = label
-          Field.value = value }
+          Field.value = value
+          attributedValue = None
+          changeMessage = None
+          dataDetectorTypes = None }
         |> Ok
 
 type PassStructure =
@@ -210,8 +251,34 @@ let rec private deserializeField
         | JsonTokenType.String ->
             match lastPropertyName with
             | Some "key" -> deserializeField &reader None { state with key = reader.GetString() |> Some }
-            | Some "label" -> deserializeField &reader None { state with label = reader.GetString() |> Some }
-            | Some "value" -> deserializeField &reader None { state with value = reader.GetString() |> Some }
+            | Some "label" ->
+                deserializeField
+                    &reader
+                    None
+                    { state with
+                        label =
+                            reader.GetString()
+                            |> LocalizableString.LocalizableString
+                            |> Some }
+            | Some "value" ->
+                let isDate, date =
+                    reader.TryGetDateTimeOffset()
+
+                if isDate then
+                    let value = FieldValue.Date date
+                    deserializeField &reader None { state with value = Some value }
+                else
+                    let value =
+                        reader.GetString()
+                        |> LocalizableString.LocalizableString
+                        |> FieldValue.LocalizableString
+                    deserializeField &reader None { state with value = Some value }
+            | other -> handleUnexpected &reader other
+        | JsonTokenType.Number ->
+            match lastPropertyName with
+            | Some "value" ->
+                let value = reader.GetInt32() |> FieldValue.Number
+                deserializeField &reader None { state with value = Some value }
             | other -> handleUnexpected &reader other
         | otherToken ->
             UnexpectedToken(otherToken, nameof deserializeField)
@@ -287,10 +354,10 @@ let rec private deserializeBarcodes (reader: Utf8JsonReader byref) (resultFields
             |> Error
 
 type PassDeserializationState =
-    { description: string option
+    { description: LocalizableString option
       formatVersion: int option
       serialNumber: string option
-      organizationName: string option
+      organizationName: LocalizableString option
       passTypeIdentifier: string option
       teamIdentifier: string option
       foregroundColor: CssColor option
@@ -392,9 +459,23 @@ let rec deserializePass
             // Pass none as last property name to last property name
             match lastPropertyName with
             | Some "description" ->
-                deserializePass &reader None { state with description = reader.GetString() |> Some }
+                deserializePass
+                    &reader
+                    None
+                    { state with
+                        description =
+                            reader.GetString()
+                            |> LocalizableString.LocalizableString
+                            |> Some }
             | Some "organizationName" ->
-                deserializePass &reader None { state with organizationName = reader.GetString() |> Some }
+                deserializePass
+                    &reader
+                    None
+                    { state with
+                        organizationName =
+                            reader.GetString()
+                            |> LocalizableString.LocalizableString
+                            |> Some }
             | Some "passTypeIdentifier" ->
                 deserializePass &reader None { state with passTypeIdentifier = reader.GetString() |> Some }
             | Some "serialNumber" ->
@@ -454,3 +535,4 @@ let rec deserializePass
         | otherToken ->
             UnexpectedToken(otherToken, nameof deserializePass)
             |> Error
+

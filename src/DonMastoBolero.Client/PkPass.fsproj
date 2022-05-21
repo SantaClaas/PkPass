@@ -1,38 +1,39 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
-	
-	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
-		<ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
-	</PropertyGroup>
-	
-	<ItemGroup>
-		<Compile Include="Resets.fs" />
-		<Compile Include="PassKit.fs" />
-		<Compile Include="Attributes.fs" />
-		<Compile Include="Components.fs" />
-		<Compile Include="Interop\Module.fs" />
-		<Compile Include="Interop\FileSystemFileHandle.fs" />
-		<Compile Include="Interop\LocalStorage.fs" />
-		<Compile Include="App.fs" />
-		<Compile Include="Main.fs" />
-		<Compile Include="Startup.fs" />
-	</ItemGroup>
-	
-	<ItemGroup>
-		<PackageReference Include="Bolero" Version="0.*" />
-		<PackageReference Include="Bolero.Build" Version="0.*" />
-		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.*" />
-		<PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
-		<PackageReference Include="System.Net.Http.Json" Version="6.0.*" />
-	</ItemGroup>
-	
-	<ItemGroup>
-		<Folder Include="wwwroot\fonts\" />
-	</ItemGroup>
 
-	<ItemGroup>
-		<ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
-	</ItemGroup>
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Order is important in F# :) -->
+        <Compile Include="Resets.fs"/>
+        <Compile Include="PassKit\PassKit.fs"/>
+        <Compile Include="Attributes.fs"/>
+        <Compile Include="Components.fs"/>
+        <Compile Include="Interop\Module.fs"/>
+        <Compile Include="Interop\FileSystemFileHandle.fs"/>
+        <Compile Include="Interop\LocalStorage.fs"/>
+        <Compile Include="App.fs"/>
+        <Compile Include="Main.fs"/>
+        <Compile Include="Startup.fs"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Bolero" Version="0.*"/>
+        <PackageReference Include="Bolero.Build" Version="0.*"/>
+        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="6.0.*"/>
+        <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0"/>
+        <PackageReference Include="System.Net.Http.Json" Version="6.0.*"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="wwwroot\fonts\"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js"/>
+    </ItemGroup>
 
 </Project>
