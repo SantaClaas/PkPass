@@ -2,6 +2,7 @@ module PkPass.Client.App
 
 open System
 open System.Net.Mime
+open System.Text.Json
 open Microsoft.AspNetCore.Components.Web
 open Bolero
 open Bolero.Html
@@ -18,6 +19,7 @@ open System.IO.Compression
 open System.IO
 open Microsoft.AspNetCore
 open PkPass
+open PkPass.PassKit
 
 module Command = Cmd
 
@@ -64,7 +66,9 @@ let zipArchiveList (FileName name) =
             img { src dataUrl }
         | true, _ when Path.GetFileName file = "pass.json" ->
             let data : byte ReadOnlySpan = File.ReadAllBytes file
-            let pass = PassKit.deserializePass data
+            
+            let mutable reader = Utf8JsonReader data
+            let pass = deserializePass &reader None PassDeserializationState.Default
             Console.WriteLine pass
             Html.empty()
         | _, _ -> p { file }

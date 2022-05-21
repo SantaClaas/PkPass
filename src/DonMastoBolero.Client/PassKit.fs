@@ -35,7 +35,7 @@ type Field =
       label: string
       value: string }
 
-type private UnfinishedField =
+type private FieldDeserializationState =
     { key: string option
       label: string option
       value: string option }
@@ -49,12 +49,12 @@ type DeserializationError =
     // A property that is required by definition is missing in the JSON
     | RequiredPropertyMissing of propertyName: string
     | UnexpectedProperty of propertyName: string * tokenType: JsonTokenType * value: object
-    // Don't like the boxing here but the value should only be used for logging or displaying
+    // Dont like the boxing here but the value should only be used for logging or displaying
     | UnexpectedValue of tokenType: JsonTokenType * value: object
     | OutOfBoundValue of tokenType: JsonTokenType * value: object * whereHint: string
     | UnexpectedToken of tokenType: JsonTokenType * whereHint: string
 
-let private tryConvertToField (state: UnfinishedField) : Result<Field, DeserializationError> =
+let private tryFinishFieldDeserialization (state: FieldDeserializationState) : Result<Field, DeserializationError> =
     match state with
     | { key = None } ->
         nameof state.key
@@ -105,49 +105,7 @@ type Pass =
     | Generic
     | StoredCard
 
-let private deserializeBarcode (reader: Utf8JsonReader byref) =
-
-    let mutable format = Unchecked.defaultof<_>
-    let mutable alternateText = None
-    let mutable message = Unchecked.defaultof<_>
-
-    let mutable messageEncoding =
-        Unchecked.defaultof<_>
-
-    let mutable lastProperty = None
-
-
-    while reader.Read()
-          && reader.TokenType <> JsonTokenType.EndObject do
-        match reader.TokenType with
-        | JsonTokenType.PropertyName -> lastProperty <- reader.GetString() |> Option.ofObj
-        | JsonTokenType.String ->
-            match lastProperty with
-            | Some "altText" -> alternateText <- reader.GetString() |> Option.ofObj
-            | Some "format" ->
-                format <-
-                    match reader.GetString() with
-                    | "PKBarcodeFormatQR" -> BarcodeFormat.Qr
-                    | "PKBarcodeFormatPDF417" -> BarcodeFormat.Pdf417
-                    | "PKBarcodeFormatAztec" -> BarcodeFormat.Aztec
-                    | otherFormat ->
-                        failwith
-                            $"Barcode format '{otherFormat}' is not recognized or supported but a format has to be provided"
-
-            | Some "message" -> message <- reader.GetString()
-            | Some "messageEncoding" -> messageEncoding <- reader.GetString() |> Encoding.GetEncoding
-            | Some otherProperty -> failwith $"Unexpected non supported property {otherProperty} in barcode object"
-            | None ->
-                failwith
-                    $"Got string token type with value '{reader.GetString()}' but no property name proceeded this value"
-            // Clean last property after we extracted the properties value
-            lastProperty <- None
-        | otherToken -> failwith $"Unexpected other token '{otherToken}' in barcode object"
-
-    Barcode(alternateText = alternateText, format = format, message = message, messageEncoding = messageEncoding)
-
-
-type private UnfinishedBarcode =
+type private BarcodeDeserializationState =
     { alternateText: string option
       format: BarcodeFormat option
       message: string option
@@ -158,7 +116,7 @@ type private UnfinishedBarcode =
           message = None
           messageEncoding = None }
 
-let private tryConvertToFinished (state: UnfinishedBarcode) =
+let private tryFinishBarcodeDeserialization (state: BarcodeDeserializationState) =
     match state with
     | { format = None } ->
         nameof state.format
@@ -201,124 +159,79 @@ let private handleUnexpected (reader: Utf8JsonReader byref) (propertyName: strin
     | None -> UnexpectedValue(tokenType, value)
     |> Error
 
-let rec private deserializeBarcode'
+let rec private deserializeBarcode
     (reader: Utf8JsonReader byref)
     (lastPropertyName: string option)
-    (state: UnfinishedBarcode)
+    (state: BarcodeDeserializationState)
     =
     if not <| reader.Read() then
-        tryConvertToFinished state
+        tryFinishBarcodeDeserialization state
     else
         match reader.TokenType with
-        | JsonTokenType.EndObject -> tryConvertToFinished state
-        | JsonTokenType.PropertyName -> deserializeBarcode' &reader (reader.GetString() |> Some) state
+        | JsonTokenType.EndObject -> tryFinishBarcodeDeserialization state
+        | JsonTokenType.PropertyName -> deserializeBarcode &reader (reader.GetString() |> Some) state
         | JsonTokenType.String ->
             match lastPropertyName with
             | Some "altText" ->
-                deserializeBarcode' &reader None { state with alternateText = reader.GetString() |> Some }
+                deserializeBarcode &reader None { state with alternateText = reader.GetString() |> Some }
             | Some "format" ->
 
                 match reader.GetString() with
-                | "PKBarcodeFormatQR" -> deserializeBarcode' &reader None { state with format = Some Qr }
-                | "PKBarcodeFormatPDF417" -> deserializeBarcode' &reader None { state with format = Some Pdf417 }
-                | "PKBarcodeFormatAztec" -> deserializeBarcode' &reader None { state with format = Some Aztec }
+                | "PKBarcodeFormatQR" -> deserializeBarcode &reader None { state with format = Some Qr }
+                | "PKBarcodeFormatPDF417" -> deserializeBarcode &reader None { state with format = Some Pdf417 }
+                | "PKBarcodeFormatAztec" -> deserializeBarcode &reader None { state with format = Some Aztec }
                 | otherFormat ->
                     OutOfBoundValue(JsonTokenType.String, otherFormat, "barcodeFormat")
                     |> Error
-            | Some "message" -> deserializeBarcode' &reader None { state with message = reader.GetString() |> Some }
+            | Some "message" -> deserializeBarcode &reader None { state with message = reader.GetString() |> Some }
             | Some "messageEncoding" ->
-                deserializeBarcode'
+                deserializeBarcode
                     &reader
                     None
                     { state with messageEncoding = reader.GetString() |> Encoding.GetEncoding |> Some }
             | other -> handleUnexpected &reader other
         | otherToken ->
-            UnexpectedToken(otherToken, nameof deserializeBarcode')
+            UnexpectedToken(otherToken, nameof deserializeBarcode)
             |> Error
 
 
 
-let rec private deserializeField'
+let rec private deserializeField
     (reader: Utf8JsonReader byref)
     (lastPropertyName: string option)
-    (state: UnfinishedField)
+    (state: FieldDeserializationState)
     =
     if not <| reader.Read() then
-        state |> tryConvertToField
+        state |> tryFinishFieldDeserialization
     else
         match reader.TokenType with
-        | JsonTokenType.EndObject -> state |> tryConvertToField
-        | JsonTokenType.PropertyName -> deserializeField' &reader (reader.GetString() |> Some) state
+        | JsonTokenType.EndObject -> state |> tryFinishFieldDeserialization
+        | JsonTokenType.PropertyName -> deserializeField &reader (reader.GetString() |> Some) state
         | JsonTokenType.String ->
             match lastPropertyName with
-            | Some "key" -> deserializeField' &reader None { state with key = reader.GetString() |> Some }
-            | Some "label" -> deserializeField' &reader None { state with label = reader.GetString() |> Some }
-            | Some "value" -> deserializeField' &reader None { state with value = reader.GetString() |> Some }
+            | Some "key" -> deserializeField &reader None { state with key = reader.GetString() |> Some }
+            | Some "label" -> deserializeField &reader None { state with label = reader.GetString() |> Some }
+            | Some "value" -> deserializeField &reader None { state with value = reader.GetString() |> Some }
             | other -> handleUnexpected &reader other
         | otherToken ->
-            UnexpectedToken(otherToken, nameof deserializeField')
+            UnexpectedToken(otherToken, nameof deserializeField)
             |> Error
 
-let private deserializeField (reader: Utf8JsonReader byref) : Field =
-    let mutable key = Unchecked.defaultof<_>
-    let mutable label = Unchecked.defaultof<_>
-    let mutable value = Unchecked.defaultof<_>
-    let mutable lastProperty = None
-
-    while reader.Read()
-          && reader.TokenType <> JsonTokenType.EndObject do
-        match reader.TokenType with
-        | JsonTokenType.StartObject -> ()
-        | JsonTokenType.PropertyName -> lastProperty <- reader.GetString() |> Some
-        | JsonTokenType.String ->
-            match lastProperty with
-            // Match to union field names
-            | Some "key" -> key <- reader.GetString()
-            | Some "label" -> label <- reader.GetString()
-            | Some "value" -> value <- reader.GetString()
-            | Some otherProperty -> failwith $"Unexpected non supported property {otherProperty} in field object"
-            | None ->
-                failwith
-                    $"Got string token type with value '{reader.GetString()}' but no property name proceeded this value"
-            // Clean last property after we extracted the properties value
-            lastProperty <- None
-        | otherToken -> failwith $"Unexpected other token '{otherToken}' in pass structure object"
-
-    { key = key
-      label = label
-      value = value }
-
-let rec private deserializeFields' (reader: Utf8JsonReader byref) (resultFields: Field list) =
+let rec private deserializeFields (reader: Utf8JsonReader byref) (resultFields: Field list) =
     if not <| reader.Read() then
         Ok resultFields
     else
         match reader.TokenType with
         | JsonTokenType.EndArray -> Ok resultFields
         | JsonTokenType.StartObject ->
-            match deserializeField' &reader None UnfinishedField.Default with
-            | Ok field -> deserializeFields' &reader (field :: resultFields)
+            match deserializeField &reader None FieldDeserializationState.Default with
+            | Ok field -> deserializeFields &reader (field :: resultFields)
             | Error error -> Error error
         | otherToken ->
-            UnexpectedToken(otherToken, nameof deserializeBarcode')
+            UnexpectedToken(otherToken, nameof deserializeBarcode)
             |> Error
-//        match
-//            deserializeField'
-//                &reader
-//                UnfinishedField.Default
-//            with
-//        | Ok field -> deserializeFields' &reader (field :: resultFields)
-//        | Error error -> Error error
 
-let private deserializeFields (reader: Utf8JsonReader byref) =
-    let mutable arrayValues = []
-
-    while reader.Read()
-          && reader.TokenType <> JsonTokenType.EndArray do
-        arrayValues <- (deserializeField &reader) :: arrayValues
-
-    arrayValues
-
-let rec private deserializePassStructure'
+let rec private deserializePassStructure
     (reader: Utf8JsonReader byref)
     (lastPropertyName: string option)
     (state: PassStructure)
@@ -328,211 +241,50 @@ let rec private deserializePassStructure'
     else
         match reader.TokenType with
         | JsonTokenType.EndObject -> Ok state
-        | JsonTokenType.PropertyName -> deserializePassStructure' &reader (reader.GetString() |> Some) state
+        | JsonTokenType.PropertyName -> deserializePassStructure &reader (reader.GetString() |> Some) state
         | JsonTokenType.StartArray ->
             // I feel like I can reduce duplicate code here because the only thing that differs between cases is applying the result
             // to the state
             match lastPropertyName with
             // Assume if it has the property it has to have a value
             | Some "headerFields" ->
-                match deserializeFields' &reader [] with
-                | Ok fieldList -> deserializePassStructure' &reader None { state with headerFields = Some fieldList }
+                match deserializeFields &reader [] with
+                | Ok fieldList -> deserializePassStructure &reader None { state with headerFields = Some fieldList }
                 | Error error -> Error error
             | Some "primaryFields" ->
-                match deserializeFields' &reader [] with
-                | Ok fieldList -> deserializePassStructure' &reader None { state with primaryFields = Some fieldList }
+                match deserializeFields &reader [] with
+                | Ok fieldList -> deserializePassStructure &reader None { state with primaryFields = Some fieldList }
                 | Error error -> Error error
             | Some "secondaryFields" ->
-                match deserializeFields' &reader [] with
-                | Ok fieldList -> deserializePassStructure' &reader None { state with secondaryFields = Some fieldList }
+                match deserializeFields &reader [] with
+                | Ok fieldList -> deserializePassStructure &reader None { state with secondaryFields = Some fieldList }
                 | Error error -> Error error
             | Some "backFields" ->
-                match deserializeFields' &reader [] with
-                | Ok fieldList -> deserializePassStructure' &reader None { state with backFields = Some fieldList }
+                match deserializeFields &reader [] with
+                | Ok fieldList -> deserializePassStructure &reader None { state with backFields = Some fieldList }
                 | Error error -> Error error
             | Some "auxiliaryFields" ->
-                match deserializeFields' &reader [] with
-                | Ok fieldList -> deserializePassStructure' &reader None { state with auxiliaryFields = Some fieldList }
+                match deserializeFields &reader [] with
+                | Ok fieldList -> deserializePassStructure &reader None { state with auxiliaryFields = Some fieldList }
                 | Error error -> Error error
             | other -> handleUnexpected &reader other
         | otherToken ->
-            UnexpectedToken(otherToken, nameof deserializePassStructure')
+            UnexpectedToken(otherToken, nameof deserializePassStructure)
             |> Error
 
-let private deserializePassStructure (reader: Utf8JsonReader byref) =
-
-    let mutable headerFields = None
-    let mutable primaryFields = None
-    let mutable secondaryFields = None
-    let mutable auxiliaryFields = None
-    let mutable backFields = None
-
-    let mutable lastProperty = None
-    // Read until end of object
-    while reader.Read()
-          && reader.TokenType <> JsonTokenType.EndObject do
-        match reader.TokenType with
-        // Enter object
-        | JsonTokenType.PropertyName -> lastProperty <- reader.GetString() |> Option.ofObj
-        | JsonTokenType.StartArray ->
-            match lastProperty with
-            | Some "headerFields" -> headerFields <- deserializeFields &reader |> Some
-            | Some "primaryFields" -> primaryFields <- deserializeFields &reader |> Some
-            | Some "secondaryFields" -> secondaryFields <- deserializeFields &reader |> Some
-            | Some "backFields" -> backFields <- deserializeFields &reader |> Some
-            | Some "auxiliaryFields" -> auxiliaryFields <- deserializeFields &reader |> Some
-            | Some otherProperty -> failwith $"Unexpected non supported property {otherProperty}"
-            | None -> failwith $"Got {reader.TokenType} token type but no property name proceeded this value"
-            // Clean last property after we extracted the properties value
-            lastProperty <- None
-        // Next read advance will leave the object
-        | otherToken -> failwith $"Unexpected other token '{otherToken}' in pass structure object"
-
-    { primaryFields = primaryFields
-      auxiliaryFields = auxiliaryFields
-      headerFields = headerFields
-      secondaryFields = secondaryFields
-      backFields = backFields }
-//    PassStructure(auxiliaryFields, backFields, headerFields, primaryFields, secondaryFields)
-
-
-let rec private deserializeBarcodes' (reader: Utf8JsonReader byref) (resultFields: Barcode list) =
+let rec private deserializeBarcodes (reader: Utf8JsonReader byref) (resultFields: Barcode list) =
     if not <| reader.Read() then
         Ok resultFields
     else
         match reader.TokenType with
         | JsonTokenType.EndArray -> Ok resultFields
         | JsonTokenType.StartObject ->
-            match deserializeBarcode' &reader None UnfinishedBarcode.Default with
-            | Ok field -> deserializeBarcodes' &reader (field :: resultFields)
+            match deserializeBarcode &reader None BarcodeDeserializationState.Default with
+            | Ok field -> deserializeBarcodes &reader (field :: resultFields)
             | Error error -> Error error
         | otherToken ->
-            UnexpectedToken(otherToken, nameof deserializeBarcode')
+            UnexpectedToken(otherToken, nameof deserializeBarcode)
             |> Error
-
-let private deserializeBarcodes (reader: Utf8JsonReader byref) =
-    let mutable arrayValues = []
-
-    while reader.Read()
-          && reader.TokenType <> JsonTokenType.EndArray do
-        arrayValues <- (deserializeBarcode &reader) :: arrayValues
-
-    arrayValues
-
-let deserializePass (data: byte ReadOnlySpan) =
-    let mutable reader = Utf8JsonReader(data)
-
-    let mutable description =
-        Unchecked.defaultof<_>
-
-    let mutable formatVersion = 0
-
-    let mutable serialNumber =
-        Unchecked.defaultof<_>
-
-    let mutable organizationName =
-        Unchecked.defaultof<_>
-
-    let mutable passTypeIdentifier =
-        Unchecked.defaultof<string>
-
-    let mutable teamIdentifier =
-        Unchecked.defaultof<_>
-
-    let mutable foregroundColor = None
-    let mutable labelColor = None
-    let mutable barcode = None
-    let mutable barcodes = None
-
-    let mutable constructPass: PassDefinition -> Pass =
-        Unchecked.defaultof<_>
-
-    let mutable relevanceDate = None
-    let mutable lastProperty = None
-
-    let mutable isPastFirstStart = false
-
-    while reader.Read()
-          && reader.TokenType <> JsonTokenType.EndObject do
-        match reader.TokenType with
-        | JsonTokenType.PropertyName -> lastProperty <- reader.GetString() |> Option.ofObj
-        | JsonTokenType.String ->
-            match lastProperty with
-            | Some "description" -> description <- reader.GetString()
-            | Some "organizationName" -> organizationName <- reader.GetString()
-            | Some "passTypeIdentifier" -> passTypeIdentifier <- reader.GetString()
-            | Some "serialNumber" -> serialNumber <- reader.GetString()
-            | Some "teamIdentifier" -> teamIdentifier <- reader.GetString()
-            | Some "relevantDate" -> relevanceDate <- reader.GetDateTimeOffset() |> Some
-            | Some "labelColor" ->
-                labelColor <-
-                    reader.GetString()
-                    |> Option.ofObj
-                    |> Option.map CssColor
-            | Some "foregroundColor" ->
-                foregroundColor <-
-                    reader.GetString()
-                    |> Option.ofObj
-                    |> Option.map CssColor
-            | Some otherProperty -> failwith $"Unexpected non supported property {otherProperty}"
-            | None ->
-                failwith
-                    $"Got {reader.TokenType} token type with value '{reader.GetString()}' but no property name proceeded this value"
-            // Clean last property after we extracted the properties value
-            lastProperty <- None
-        | JsonTokenType.Number ->
-            match lastProperty with
-            | Some "formatVersion" -> formatVersion <- reader.GetInt32()
-            | Some otherProperty -> failwith $"Unexpected non supported property {otherProperty}"
-            | None ->
-                failwith
-                    $"Got {reader.TokenType} token type with value '{reader.GetInt64()}' but no property name preceded this value"
-
-            // Clean last property after we extracted the properties value
-            lastProperty <- None
-
-        | JsonTokenType.StartObject ->
-            match lastProperty with
-            | Some "barcode" -> barcode <- deserializeBarcode &reader |> Some
-            | Some "eventTicket" ->
-                let structure =
-                    deserializePassStructure &reader
-
-                constructPass <- fun definition -> EventTicket(definition, structure)
-            | Some otherProperty -> failwith $"Unexpected non supported property {otherProperty}"
-            // First object start is the root of the object
-            | None when not isPastFirstStart ->
-                // After this any object that starts without property is invalid
-                isPastFirstStart <- true
-            | None -> failwith $"Got {reader.TokenType} token type but no property name preceded this value"
-
-            // Clean last property after we extracted the properties value
-            lastProperty <- None
-        // Next read advance will leave the object
-        | JsonTokenType.StartArray ->
-            match lastProperty with
-            | Some "barcodes" -> barcodes <- (deserializeBarcodes &reader) |> Some
-            | Some otherProperty -> failwith $"Unexpected non supported property {otherProperty}"
-            | None -> failwith $"Got {reader.TokenType} token type but no property name preceded this value"
-            // Clean last property after we extracted the properties value
-            lastProperty <- None
-        // Next read advance will leave the object
-        | _ -> Console.WriteLine $"Not supported token type '{reader.TokenType}'"
-
-    let definition =
-        { description = description
-          formatVersion = formatVersion
-          organizationName = organizationName
-          passTypeIdentifier = passTypeIdentifier
-          serialNumber = serialNumber
-          teamIdentifier = teamIdentifier
-          foregroundColor = foregroundColor
-          labelColor = labelColor
-          barcode = barcode
-          barcodes = barcodes
-          relevanceDate = relevanceDate }
-
-    constructPass definition
 
 type PassDeserializationState =
     { description: string option
@@ -564,7 +316,7 @@ type PassDeserializationState =
           relevanceDate = None
           isPastRootStartObject = false }
 
-let private tryFinishSerialization (state: PassDeserializationState) =
+let private tryFinishPassDeserialization (state: PassDeserializationState) =
     match state with
     // All the cases where a property was never added but is required
     | { description = None } ->
@@ -623,82 +375,82 @@ let private tryFinishSerialization (state: PassDeserializationState) =
         |> Ok
 
 
-let rec deserializePass'
+let rec deserializePass
     (reader: Utf8JsonReader byref)
     (lastPropertyName: string option)
     (state: PassDeserializationState)
     =
     if not (reader.Read()) then
         // Exit
-        tryFinishSerialization state
+        tryFinishPassDeserialization state
     else
         match reader.TokenType with
         // Exit
-        | JsonTokenType.EndObject -> tryFinishSerialization state
-        | JsonTokenType.PropertyName -> deserializePass' &reader (reader.GetString() |> Some) state
+        | JsonTokenType.EndObject -> tryFinishPassDeserialization state
+        | JsonTokenType.PropertyName -> deserializePass &reader (reader.GetString() |> Some) state
         | JsonTokenType.String ->
             // Pass none as last property name to last property name
             match lastPropertyName with
             | Some "description" ->
-                deserializePass' &reader None { state with description = reader.GetString() |> Some }
+                deserializePass &reader None { state with description = reader.GetString() |> Some }
             | Some "organizationName" ->
-                deserializePass' &reader None { state with organizationName = reader.GetString() |> Some }
+                deserializePass &reader None { state with organizationName = reader.GetString() |> Some }
             | Some "passTypeIdentifier" ->
-                deserializePass' &reader None { state with passTypeIdentifier = reader.GetString() |> Some }
+                deserializePass &reader None { state with passTypeIdentifier = reader.GetString() |> Some }
             | Some "serialNumber" ->
-                deserializePass' &reader None { state with serialNumber = reader.GetString() |> Some }
+                deserializePass &reader None { state with serialNumber = reader.GetString() |> Some }
             | Some "teamIdentifier" ->
-                deserializePass' &reader None { state with teamIdentifier = reader.GetString() |> Some }
+                deserializePass &reader None { state with teamIdentifier = reader.GetString() |> Some }
             | Some "relevantDate" ->
-                deserializePass' &reader None { state with relevanceDate = reader.GetDateTimeOffset() |> Some }
+                deserializePass &reader None { state with relevanceDate = reader.GetDateTimeOffset() |> Some }
             | Some "labelColor" ->
                 let labelColor =
                     reader.GetString()
                     |> Option.ofObj
                     |> Option.map CssColor
 
-                deserializePass' &reader None { state with labelColor = labelColor }
+                deserializePass &reader None { state with labelColor = labelColor }
             | Some "foregroundColor" ->
                 let foregroundColor =
                     reader.GetString()
                     |> Option.ofObj
                     |> Option.map CssColor
 
-                deserializePass' &reader None { state with foregroundColor = foregroundColor }
+                deserializePass &reader None { state with foregroundColor = foregroundColor }
             | other -> handleUnexpected &reader other
         | JsonTokenType.Number ->
             match lastPropertyName with
             | Some "formatVersion" ->
-                deserializePass' &reader None { state with formatVersion = reader.GetInt32() |> Some }
+                deserializePass &reader None { state with formatVersion = reader.GetInt32() |> Some }
             | other -> handleUnexpected &reader other
         | JsonTokenType.StartObject ->
             match lastPropertyName with
             // When we start deserializing we need to advance once past the root object start
             | _ when not state.isPastRootStartObject ->
-                deserializePass' &reader None { state with isPastRootStartObject = true }
+                deserializePass &reader None { state with isPastRootStartObject = true }
             | Some "barcode" ->
-                match deserializeBarcode' &reader None UnfinishedBarcode.Default with
-                | Ok barcode -> deserializePass' &reader None { state with barcode = Some barcode }
-                // This maps Result<Barcode,'TError> to Result<Pass.'TError>. Is there a simpler way?
+                match deserializeBarcode &reader None BarcodeDeserializationState.Default with
+                | Ok barcode -> deserializePass &reader None { state with barcode = Some barcode }
+                // This maps Result<Barcode,TError> to Result<Pass.TError>. Is there a simpler way?
                 | Error error -> Error error
             | Some "eventTicket" ->
                 let structure =
-                    deserializePassStructure' &reader None PassStructure.Default
-                // Would use option bind but can't because of reader byref :)
+                    deserializePassStructure &reader None PassStructure.Default
+                // Would use option bind but cant because of reader byref :)
                 match structure with
                 | Ok structure ->
                     let transformer definition = EventTicket(definition, structure)
-                    deserializePass' &reader None { state with constructPass = Some transformer }
+                    deserializePass &reader None { state with constructPass = Some transformer }
                 | Error error -> Error error
             | other -> handleUnexpected &reader other
 
         | JsonTokenType.StartArray ->
             match lastPropertyName with
             | Some "barcodes" ->
-                match deserializeBarcodes' &reader [] with
-                | Ok barcodeList -> deserializePass' &reader None { state with barcodes = Some barcodeList }
+                match deserializeBarcodes &reader [] with
+                | Ok barcodeList -> deserializePass &reader None { state with barcodes = Some barcodeList }
                 | Error error -> Error error
             | other -> handleUnexpected &reader other
         | otherToken ->
-            UnexpectedToken(otherToken, nameof deserializePass')
+            UnexpectedToken(otherToken, nameof deserializePass)
             |> Error
