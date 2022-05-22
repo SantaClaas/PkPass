@@ -16,31 +16,38 @@ let directories =
     {| artifacts = "./artifacts"
        source = "./src" |}
 
-let files =
-    {| project = $"{directories.source}/PkPass/PkPass.fsproj" |}
+let files = {| project = $"{directories.source}/PkPass/PkPass.fsproj" |}
 
 // Constants for target names
 let targets =
     {| clean = "Clean"
+       restore = "Restore"
        publish = "Publish"
        all = "All" |}
 
-Target.create targets.clean (fun _ -> !! "src/**/bin" ++ "src/**/obj" ++ "artifacts" |> Shell.cleanDirs)
+Target.create targets.clean (fun _ ->
+    !! "src/**/bin" ++ "src/**/obj" ++ "artifacts"
+    |> Shell.cleanDirs)
+
+
+
+Target.create targets.restore (fun _ -> DotNet.restore (fun options -> options) files.project)
 
 let setParameters (options: DotNet.PublishOptions) =
     { options with OutputPath = Some directories.artifacts }
+
 let runPublish _ =
     try
         DotNet.publish setParameters files.project
     with
     | exception' ->
         Trace.traceError (exception'.ToString())
-        reraise()
-        
+        reraise ()
+
 Target.create targets.publish runPublish
 
 Target.create targets.all ignore
 
-targets.clean ==> targets.publish ==> targets.all
+targets.clean ==> targets.restore ==> targets.publish ==> targets.all
 
 Target.runOrDefault targets.all
