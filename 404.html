@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PK PASS</title>
+    <base href="/">
+    <meta name="color-scheme" content="dark light">
+
+    <!-- Make app installable -->
+    <link href="app.json.webmanifest" rel="manifest" />
+
+    <!-- GoogleFonts: TODO self host -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS play CDN: TODO use proper build -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        //const defaultTheme = require('tailwindcss/defaultTheme')
+
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'sans': ['Roboto']
+                    },
+                    lineHeight: {
+                        'display-lg': '4rem',
+                        'dispay-md': '3.25rem',
+                        'display-sm': '2.75rem',
+                        'headline-lg': '2.5rem',
+                        'headline-md': '2.25rem',
+                        'headline-sm': '2rem',
+                        'title-lg': '1.75rem',
+                        'title-md': '1.5rem',
+                        'title-sm': '1.25rem',
+                        'label-lg': '1.25rem',
+                        'label-md': '1rem',
+                        'label-sm': '0.375rem',
+                        'body-lg': '1.5rem',
+                        'body-md': '1.25rem',
+                        'body-sm': '1rem'
+                    },
+
+                    fontSize: {
+                        'label-lg': '0.875rem'
+                    },
+                    letterSpacing: {
+                        'label-lg': '0.00625rem'
+                    },
+                    fontWeight: {
+                        'label-lg': 500
+                    },
+                    spacing: {
+                        '4.5': '1.125rem'
+                    },
+                    colors: {
+                        // Dark theme elevation levels as recommended by material.io https://material.io/design/color/dark-theme.html#properties
+                        elevation: {
+                            0: "#121212",
+                            1: "#1d1d1d",
+                            2: "#212121",
+                            3: "#242424",
+                            4: "#272727",
+                            6: "#2c2c2c",
+                            8: "#2d2d2d",
+                            12: "#323232",
+                            16: "#353535",
+                            24: "#373737",
+                        },
+                        emphasis: {
+                            high: "#e0e0e0",
+                            medium: "#a0a0a0",
+                            low: "#6c6c6c"
+                        },
+                        // https://material.io/design/color/the-color-system.html#tools-for-picking-colors with FA52FA
+                        primary: {
+                            50: "#ffe5fe",
+                            100: "#fdbefc",
+                            200: "#fc8efb",
+                            300: "#fa52fa",
+                            400: "#f600f8",
+                            500: "#ea00ed",
+                            600: "#d800e9",
+                            700: "#c000e3",
+                            800: "#aa00de",
+                            900: "#8100d4",
+                        },
+                        complementary: {
+                            50: "#ecffe9",
+                            100: "#cfffc8",
+                            200: "#acffa3",
+                            300: "#81fd78",
+                            400: "#52fa52",
+                            500: "#00f721",
+                            600: "#00e417",
+                            700: "#00ce03",
+                            800: "#00b900",
+                            900: "#009400",
+                        },
+                        analogous: {
+                            1: {
+                                50: "#f4e8fe",
+                                100: "#e0c7fd",
+                                200: "#cca1fc",
+                                300: "#b876fc",
+                                400: "#a652fa",
+                                500: "#9426f7",
+                                600: "#891ff0",
+                                700: "#7911e7",
+                                800: "#6b00e2",
+                                900: "#5400d3",
+                            },
+                            2: {
+                                50: "#fde3f0",
+                                100: "#fab8da",
+                                200: "#f989c0",
+                                300: "#fa52a6",
+                                400: "#fb0c8f",
+                                500: "#f90077",
+                                600: "#e70074",
+                                700: "#d0006e",
+                                800: "#ba006a",
+                                900: "#910062",
+                            }
+                        },
+                        triadic: {
+                            1: {
+                                50: "#ffebef",
+                                100: "#ffced4",
+                                200: "#f69b9c",
+                                300: "#ee7475",
+                                400: "#fa5252",
+                                500: "#ff3f36",
+                                600: "#f13636",
+                                700: "#df2b30",
+                                800: "#d22229",
+                                900: "#c3141d",
+                            }, 2: {
+                                50: "#feffe7",
+                                100: "#fbfcc3",
+                                200: "#f8f999",
+                                300: "#f4f56e",
+                                400: "#fafa52",
+                                500: "#f6f529",
+                                600: "#fae523",
+                                700: "#fbcc11",
+                                800: "#fcb300",
+                                900: "#fb8900",
+                            }
+                        }
+                    },
+
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+    </style>
+</head>
+<body>
+    <div id="main">Loading...</div>
+    <script>
+
+        const loadedPasses = [];
+
+        const getLength = () => loadedPasses.length;
+        function getStuff() {
+            return loadedPasses.length;
+        }
+
+        if ('launchQueue' in window && 'files' in LaunchParams.prototype) {
+            console.info("File Handling API is supported! 🥳🎉");
+            launchQueue.setConsumer((launchParameters) => {
+                // Nothing to do when the queue is empty
+                if (!launchParameters.files.length) {
+                    console.info("File handling queue is empty. Don't need to handle files")
+
+                    return;
+                }
+
+                for (const fileHandle of launchParameters.files) {
+                    console.info("Received file!", fileHandle);
+                    // Add file to cache for app to pick up after it loaded
+                    loadedPasses.push(fileHandle);
+                }
+            })
+
+        } else {
+            console.info("Fle Handling API is not supported 😔. Maybe it is only in canary or dev chromium browser versions yet?");
+        }
+    </script>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script>navigator.serviceWorker.register('service-worker.js');</script>
+
+</body>
+</html>
