@@ -245,6 +245,23 @@ let openPage model =
                                 ``class`` "flex"
                                 forEach fields renderPrimaryField
                             }
+                            
+                        // Barcode
+                        //TODO prefer barcodes over barcode which is deprecated-ish and use barcode as fallback
+                        match passDefinition.barcode with
+                        | None -> Html.empty()
+                        | Some (Barcode(alternateText,format, message, messageEncoding)) ->
+                            match format with
+                            | Qr ->
+                                let (Image.Base64 base64String)  = Barcode.createQrCode message
+                                let source  = createPngDataUrl base64String
+                                img {
+                                    ``class`` "rounded-3xl"
+                                    src source
+                                }
+                            | _ -> div {
+                                "Sorry this barcode format is not yet supported :("
+                            }
                     }
                 | _ -> p { "Sorry this pass type is not yet supported :(" }
             | Some (Error error) ->
