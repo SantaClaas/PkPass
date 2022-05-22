@@ -55,6 +55,8 @@ type Message =
     | SetPassBackground of PassBackground option
     | SetPassLogo of PassLogo option
     | SetPassThumbnail of PassThumbnail option
+    | OpenFilePicker
+    | SetOpenFilePickerResult of IJSObjectReference
     | LogError of Error
 
 let flip f x y = f y x
@@ -79,7 +81,7 @@ let loadBackground = loadImage getBackground
 let loadLogo = loadImage getLogo
 let loadThumbnail = loadImage getThumbnail
 
-let update (logger: ILogger) message model =
+let update (jsRuntime: IJSRuntime) (logger: ILogger) message model =
     match message with
     | SetPage page -> { model with page = page }, Command.none
     | SetPassFiles passes ->
@@ -92,8 +94,9 @@ let update (logger: ILogger) message model =
 
         let loadLogoCommand =
             Command.OfFunc.perform loadLogo passes SetPassLogo
-            
-        let loadThumbnailCommand = Command.OfFunc.perform loadThumbnail passes SetPassThumbnail
+
+        let loadThumbnailCommand =
+            Command.OfFunc.perform loadThumbnail passes SetPassThumbnail
 
         { model with passFiles = Some passes },
         Command.batch [ deserializeCommand
@@ -104,6 +107,13 @@ let update (logger: ILogger) message model =
     | SetPassLogo logo -> { model with logo = logo }, Command.none
     | SetPassThumbnail thumbnail -> { model with thumbnail = thumbnail }, Command.none
     | SetPassResult passResultOption -> { model with passResult = passResultOption }, Command.none
+    | OpenFilePicker ->
+        //TODO error handling
+        let command = Command.OfTask.perform (fun () -> jsRuntime.InvokeAsync<IJSObjectReference>("showOpenFilePicker").AsTask()) () SetOpenFilePickerResult
+        model, command
+    | SetOpenFilePickerResult handle ->
+        Console.WriteLine handle
+        model, Command.none
     | LogError error ->
         match error with
         | LoadFilesError ``exception`` ->
@@ -113,44 +123,48 @@ let update (logger: ILogger) message model =
 let renderHeaderField field =
     div {
         ``class`` "text-right"
+
         p {
             ``class`` "text-xs"
+
             let header =
                 match field.label with
                 | None -> String.Empty
-                | Some (LocalizableString.LocalizableString value) ->
-                    value
+                | Some (LocalizableString.LocalizableString value) -> value
+
             header
         }
-        
+
         p {
             match field.value with
-            | LocalizableString (LocalizableString.LocalizableString stringValue) ->
-                stringValue
+            | LocalizableString (LocalizableString.LocalizableString stringValue) -> stringValue
             | _ -> String.Empty
         }
     }
-    
+
 let renderPrimaryField field =
     div {
         p {
             ``class`` "text-xs"
+
             let header =
                 match field.label with
                 | None -> String.Empty
-                | Some (LocalizableString.LocalizableString value) ->
-                    value
+                | Some (LocalizableString.LocalizableString value) -> value
+
             header
         }
-        
+
         p {
             ``class`` "text-sm"
+
             match field.value with
-            | LocalizableString (LocalizableString.LocalizableString stringValue) ->
-                stringValue
+            | LocalizableString (LocalizableString.LocalizableString stringValue) -> stringValue
             | _ -> String.Empty
         }
     }
+
+
 let openPage model =
     concat {
         comp<PageTitle> { "Passes" }
@@ -200,11 +214,12 @@ let openPage model =
                                     forEach fields renderHeaderField
                                 }
                         }
-                        
+
                         // What I call "body"
                         // Body row
                         div {
                             ``class`` "flex justify-between"
+
                             div {
                                 ``class`` "flex flex-col"
                                 // Primary fields
@@ -215,8 +230,8 @@ let openPage model =
                                         ``class`` "flex"
                                         forEach fields renderPrimaryField
                                     }
-                                    
-                                // Secondary fields below 
+
+                                // Secondary fields below
                                 match passStructure.secondaryFields with
                                 | None -> Html.empty ()
                                 | Some fields ->
@@ -225,7 +240,7 @@ let openPage model =
                                         forEach fields renderPrimaryField
                                     }
                             }
-                            
+
                             match model.thumbnail with
                             | None -> Html.empty ()
                             | Some (PassThumbnail (Image.Base64 base64String)) ->
@@ -236,7 +251,7 @@ let openPage model =
                                     src source
                                 }
                         }
-                        
+
                         // Auxiliary fields
                         match passStructure.auxiliaryFields with
                         | None -> Html.empty ()
@@ -245,23 +260,24 @@ let openPage model =
                                 ``class`` "flex"
                                 forEach fields renderPrimaryField
                             }
-                            
+
                         // Barcode
                         //TODO prefer barcodes over barcode which is deprecated-ish and use barcode as fallback
                         match passDefinition.barcode with
-                        | None -> Html.empty()
-                        | Some (Barcode(alternateText,format, message, messageEncoding)) ->
+                        | None -> Html.empty ()
+                        | Some (Barcode (alternateText, format, message, messageEncoding)) ->
                             match format with
                             | Qr ->
-                                let (Image.Base64 base64String)  = Barcode.createQrCode message
-                                let source  = createPngDataUrl base64String
+                                let (Image.Base64 base64String) =
+                                    Barcode.createQrCode message
+
+                                let source = createPngDataUrl base64String
+
                                 img {
                                     ``class`` "rounded-3xl"
                                     src source
                                 }
-                            | _ -> div {
-                                "Sorry this barcode format is not yet supported :("
-                            }
+                            | _ -> div { "Sorry this barcode format is not yet supported :(" }
                     }
                 | _ -> p { "Sorry this pass type is not yet supported :(" }
             | Some (Error error) ->
@@ -278,14 +294,27 @@ let openPage model =
         }
     }
 
-let homePage =
-    // Jus the same for now
-    openPage
+let homePage model (dispatch: Message Dispatch) =
+    concat {
+        
+        comp<PageTitle> { "Passes" }
+        main {
+            ``class`` "p-4"
+            h1 {
+                "Passes"
+            }
+            
+            button {
+                on.click (fun _ -> dispatch OpenFilePicker)
+                "Add"
+            }
+        }
+    }
 
-let view (model: Model) dispatch =
+let view (model: Model) (dispatch: Message Dispatch) =
     match model.page with
-    | Home -> homePage model
-    | Open -> openPage model
+    | Home -> homePage model dispatch
+    | Open -> openPage model 
 
 let router =
     Router.infer SetPage (fun model -> model.page)
@@ -296,7 +325,7 @@ let program (jsRuntime: IJSRuntime) logger (client: HttpClient) =
     let runtime =
         jsRuntime :?> IJSInProcessRuntime
 
-    let update = update logger
+    let update = update jsRuntime logger
 
     let createAsync (index: int) (jsModule: IJSObjectReference) =
         task {
@@ -330,13 +359,6 @@ let program (jsRuntime: IJSRuntime) logger (client: HttpClient) =
 
             return! createTasks |> Array.map loadFile |> Task.WhenAll
         }
-
-
-
-
-
-
-
 
     //let startCommand =
     //    Command.batch [ Command.OfFunc.either loadClientId () idToMessage idErrorToMessage
