@@ -1,8 +1,9 @@
-﻿module PkPass.PassKit
+﻿module PkPass.PassKit.Deserialization
 
 open System
 open System.Text
 open System.Text.Json
+open PkPass
 open Resets
 
 type CssColor = CssColor of string
