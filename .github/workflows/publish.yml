@@ -30,8 +30,8 @@ jobs:
       run: echo "pass.claas.dev" > ./artifacts/wwwroot/CNAME
       
     # Copy index.html to 404.html to serve the same file when a file is not found. This fixes GitHub Pages routing issues
-    - name: 🚷 Copy index.html to 404.html
-      run: cp ./artifacts/wwwroot/index.html ./artifacts/wwwroot/404.html
+    # - name: 🚷 Copy index.html to 404.html
+    #   run: cp ./artifacts/wwwroot/index.html ./artifacts/wwwroot/404.html
 
     - name: 🚀 Deploy 
       uses: JamesIves/github-pages-deploy-action@v4.3.3
