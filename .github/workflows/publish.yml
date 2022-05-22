@@ -5,6 +5,8 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -12,12 +14,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup .NET
+    - name: 🛎️ Checkout
+      uses: actions/checkout@v3
+    - name: 🗿 Setup .NET
       uses: actions/setup-dotnet@v2
       with:
         dotnet-version: 6.0.x
-    - name: Restore .NET Tools
+    - name: 📦 Restore .NET Tools
       run: dotnet tool restore
-    - name: Run FAKE build
+    - name: 🔧 Run FAKE build
       run: dotnet fake run
+    
+    - name: 🚀 Deploy 
+      uses: JamesIves/github-pages-deploy-action@v4.3.3
+      with:
+        branch: gh-pages
+        folder: artifacts/wwwroot
