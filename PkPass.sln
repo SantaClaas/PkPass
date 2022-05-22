@@ -5,7 +5,7 @@ VisualStudioVersion = 17.1.32414.318
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{87F6C079-CBD7-4866-BDEB-CBDEA9E51D2A}"
 EndProject
-Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "PkPass", "src\DonMastoBolero.Client\PkPass.fsproj", "{1481BBD6-A6DA-4912-A03A-134880D14701}"
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "PkPass", "src\PkPass\PkPass.fsproj", "{1481BBD6-A6DA-4912-A03A-134880D14701}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{85171720-74F0-4382-B546-DE3131026AB5}"
 EndProject
