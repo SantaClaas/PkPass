@@ -3,6 +3,7 @@ nuget Fake.DotNet.Cli
 nuget Fake.IO.FileSystem
 nuget Fake.Core.Target //"
 #load ".fake/build.fsx/intellisense.fsx"
+
 open Fake.Core
 open Fake.DotNet
 open Fake.IO
@@ -10,23 +11,36 @@ open Fake.IO.FileSystemOperators
 open Fake.IO.Globbing.Operators
 open Fake.Core.TargetOperators
 
-Target.initEnvironment ()
+// Target.initEnvironment ()
+let directories =
+    {| artifacts = "./artifacts"
+       source = "./src" |}
 
-Target.create "Clean" (fun _ ->
-    !! "src/**/bin"
-    ++ "src/**/obj"
-    |> Shell.cleanDirs 
-)
+let files =
+    {| project = $"{directories.source}/PkPass/PkPass.fsproj" |}
 
-Target.create "Build" (fun _ ->
-    !! "src/**/*.*proj"
-    |> Seq.iter (DotNet.build id)
-)
+// Constants for target names
+let targets =
+    {| clean = "Clean"
+       publish = "Publish"
+       all = "All" |}
 
-Target.create "All" ignore
+Target.create targets.clean (fun _ -> !! "src/**/bin" ++ "src/**/obj" ++ "artifacts" |> Shell.cleanDirs)
 
-"Clean"
-  ==> "Build"
-  ==> "All"
+let setParameters (options: DotNet.PublishOptions) =
+    { options with OutputPath = Some directories.artifacts }
+let runPublish _ =
+    try
+        DotNet.publish setParameters files.project
+    with
+    | exception' ->
+        Trace.traceError (exception'.ToString())
+        reraise()
+        
+Target.create targets.publish runPublish
 
-Target.runOrDefault "All"
+Target.create targets.all ignore
+
+targets.clean ==> targets.publish ==> targets.all
+
+Target.runOrDefault targets.all
