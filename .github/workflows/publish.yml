@@ -24,7 +24,15 @@ jobs:
       run: dotnet tool restore
     - name: 🔧 Run FAKE build
       run: dotnet fake run
-    
+
+    # Make app available under https://pass.claas.dev
+    - name: 🔀 Create CNAME file
+      run: echo "pass.claas.dev" > ./artifacts/wwwroot/CNAME
+      
+    # Copy index.html to 404.html to serve the same file when a file is not found. This fixes GitHub Pages routing issues
+    - name: 🚷 Copy index.html to 404.html
+      run: cp ./artifacts/wwwroot/index.html ./artifacts/wwwroot/404.html
+
     - name: 🚀 Deploy 
       uses: JamesIves/github-pages-deploy-action@v4.3.3
       with:
