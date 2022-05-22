@@ -29,12 +29,10 @@ Target.create targets.clean (fun _ ->
     !! "src/**/bin" ++ "src/**/obj" ++ "artifacts"
     |> Shell.cleanDirs)
 
-
-
 Target.create targets.restore (fun _ -> DotNet.restore (fun options -> options) files.project)
 
 let setParameters (options: DotNet.PublishOptions) =
-    { options with OutputPath = Some directories.artifacts }
+    { options with OutputPath = Some directories.artifacts; Configuration = DotNet.BuildConfiguration.Release}
 
 let runPublish _ =
     try
