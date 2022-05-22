@@ -1,0 +1,43 @@
+{
+  "name": "PK PASS",
+  "short_name": "PK PASS",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#03173d",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    },
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/open",
+      "accept": {
+        "application/vnd.apple.pkpass": [ ".pkpass" ],
+        "application/vnd.apple.pkpasses": [ ".pkpasses" ]
+      },
+      "icons": [
+        {
+          "src": "icon-512.png",
+          "sizes": "512x512",
+          "type": "image/png"
+        },
+        {
+          "src": "icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ],
+      "launch_type": "single-client"
+    }
+  ]
+}
