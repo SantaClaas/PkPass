@@ -369,7 +369,7 @@
       "url": "_framework\/zh-Hant\/FSharp.Core.resources.dll"
     },
     {
-      "hash": "sha256-MU4oKONiu0WQp38E20u2+l\/cA5OqklQyEAi\/cp5zF6w=",
+      "hash": "sha256-Tbcxav81QqSC+05HPRAHCiIMSKzuRgomOwbdbElbOTk=",
       "url": "app.json.webmanifest"
     },
     {
@@ -457,5 +457,5 @@
       "url": "module.js"
     }
   ],
-  "version": "Hg1YUEOu"
+  "version": "TFYgLjVv"
 };
