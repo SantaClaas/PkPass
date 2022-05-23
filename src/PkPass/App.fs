@@ -55,8 +55,8 @@ type Message =
     | SetPassBackground of PassBackground option
     | SetPassLogo of PassLogo option
     | SetPassThumbnail of PassThumbnail option
-    | OpenFilePicker
-    | SetOpenFilePickerResult of IJSObjectReference
+    | RunTestJavaScript
+    | SetTest of Caches.Cache
     | LogError of Error
 
 let flip f x y = f y x
@@ -107,11 +107,12 @@ let update (jsRuntime: IJSRuntime) (logger: ILogger) message model =
     | SetPassLogo logo -> { model with logo = logo }, Command.none
     | SetPassThumbnail thumbnail -> { model with thumbnail = thumbnail }, Command.none
     | SetPassResult passResultOption -> { model with passResult = passResultOption }, Command.none
-    | OpenFilePicker ->
+    | RunTestJavaScript ->
         //TODO error handling
-        let command = Command.OfTask.perform (fun () -> jsRuntime.InvokeAsync<IJSObjectReference>("showOpenFilePicker").AsTask()) () SetOpenFilePickerResult
+        let test () = Caches.open' "files" jsRuntime
+        let command = Command.OfTask.perform test () SetTest
         model, command
-    | SetOpenFilePickerResult handle ->
+    | SetTest handle ->
         Console.WriteLine handle
         model, Command.none
     | LogError error ->
@@ -305,7 +306,7 @@ let homePage model (dispatch: Message Dispatch) =
             }
             
             button {
-                on.click (fun _ -> dispatch OpenFilePicker)
+                on.click (fun _ -> dispatch RunTestJavaScript)
                 "Add"
             }
         }

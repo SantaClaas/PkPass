@@ -24,6 +24,7 @@
         <Compile Include="Interop\Module.fs" />
         <Compile Include="Interop\FileSystemFileHandle.fs" />
         <Compile Include="Interop\LocalStorage.fs" />
+        <Compile Include="Interop\Caches.fs" />
         <Compile Include="App.fs" />
         <Compile Include="Main.fs" />
         <Compile Include="Startup.fs" />

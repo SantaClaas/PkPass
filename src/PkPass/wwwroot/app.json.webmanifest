@@ -49,6 +49,7 @@
     "method": "POST",
     "enctype": "multipart/form-data",
     "params": {
+      "title" : "title",
       "files": [
         {
           "name": "digital pass",
