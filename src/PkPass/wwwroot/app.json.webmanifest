@@ -55,7 +55,15 @@
           "name": "digital pass",
           "accept": [
             ".pkpass",
-            ".pkpasses"
+            ".pkpasses",
+            "application/zip",
+            "application/octet-stream",
+            "application/vnd.apple.pkpass",
+            "application/vnd.apple.pkpasses",
+            "application/vnd.apple.pkpass+zip",
+            "application/vnd.apple.pkpasses+zip",
+            "application/vnd.apple.pkpass+octet-stream",
+            "application/vnd.apple.pkpasses+octet-stream"
           ]
         }
       ]
