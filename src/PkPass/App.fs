@@ -17,6 +17,7 @@ open System.Threading.Tasks
 open System.Net.Http
 open System.IO.Compression
 open System.IO
+open PkPass.Interop
 open PkPass.PassKit
 open PkPass.PassKit.Deserialization
 open PkPass.PassKit.Package
@@ -26,13 +27,14 @@ module Command = Cmd
 type Page =
     | [<EndPoint "/">] Home
     | [<EndPoint "/open">] Open
+    | [<EndPoint "/open/{fileName}">] OpenFile of fileName: string 
 
 type FileName = FileName of string
 
 
 type Model =
     { page: Page
-      passFiles: FileName array option
+      cacheUrls : string array
       background: PassBackground option
       logo: PassLogo option
       thumbnail: PassThumbnail option
@@ -40,7 +42,7 @@ type Model =
 
 let initializeModel () =
     { page = Home
-      passFiles = None
+      cacheUrls = [||]
       background = None
       logo = None
       thumbnail = None
@@ -50,13 +52,11 @@ type Error = LoadFilesError of exn
 
 type Message =
     | SetPage of Page
-    | SetPassFiles of FileName array
+    | SetPassCacheUrls of string array
     | SetPassResult of Result<Pass, DeserializationError> option
     | SetPassBackground of PassBackground option
     | SetPassLogo of PassLogo option
     | SetPassThumbnail of PassThumbnail option
-    | RunTestJavaScript
-    | SetTest of Caches.Cache
     | LogError of Error
 
 let flip f x y = f y x
@@ -81,40 +81,23 @@ let loadBackground = loadImage getBackground
 let loadLogo = loadImage getLogo
 let loadThumbnail = loadImage getThumbnail
 
-let update (jsRuntime: IJSRuntime) (logger: ILogger) message model =
+let update (jsRuntime: IJSRuntime) (logger: ILogger) (client: HttpClient) message model =
     match message with
-    | SetPage page -> { model with page = page }, Command.none
-    | SetPassFiles passes ->
-        //TODO error handling
-        let deserializeCommand =
-            Command.OfFunc.perform deserializePass passes SetPassResult
-
-        let loadBackgroundCommand =
-            Command.OfFunc.perform loadBackground passes SetPassBackground
-
-        let loadLogoCommand =
-            Command.OfFunc.perform loadLogo passes SetPassLogo
-
-        let loadThumbnailCommand =
-            Command.OfFunc.perform loadThumbnail passes SetPassThumbnail
-
-        { model with passFiles = Some passes },
-        Command.batch [ deserializeCommand
-                        loadBackgroundCommand
-                        loadLogoCommand
-                        loadThumbnailCommand ]
+    | SetPage page ->
+        match page with
+        | OpenFile fileName ->
+            // Load file and then open actual open page
+//            let loadCommand =
+//                load () = loadFromCache fileName
+//                Command.OfTask.perform load SetPackage
+            model, Command.none
+        | _ -> { model with page = page }, Command.none
+    | SetPassCacheUrls urls ->
+        {model with cacheUrls = urls}, Command.none
     | SetPassBackground background -> { model with background = background }, Command.none
     | SetPassLogo logo -> { model with logo = logo }, Command.none
     | SetPassThumbnail thumbnail -> { model with thumbnail = thumbnail }, Command.none
     | SetPassResult passResultOption -> { model with passResult = passResultOption }, Command.none
-    | RunTestJavaScript ->
-        //TODO error handling
-        let test () = Caches.open' "files" jsRuntime
-        let command = Command.OfTask.perform test () SetTest
-        model, command
-    | SetTest handle ->
-        Console.WriteLine handle
-        model, Command.none
     | LogError error ->
         match error with
         | LoadFilesError ``exception`` ->
@@ -164,8 +147,119 @@ let renderPrimaryField field =
             | _ -> String.Empty
         }
     }
+let createPngDataUrl base64String = $"data:image/png;base64,{base64String}"
+let headerRow model passStructure =
+    div {
+    ``class`` "flex justify-between items-center"
+
+    match model.logo with
+    | None -> Html.empty ()
+    | Some (PassLogo (Image.Base64 base64String)) ->
+        let source = createPngDataUrl base64String
+
+        img {
+            ``class`` "w-1/3"
+            src source
+        }
+    //TODO logo text in between
+    // Header fields
+    match passStructure.headerFields with
+    | None -> Html.empty ()
+    | Some fields ->
+        div {
+            ``class`` "flex"
+            forEach fields renderHeaderField
+        }
+    }
+let bodyRow model passStructure =
+     div {
+        ``class`` "flex justify-between"
+
+        div {
+            ``class`` "flex flex-col"
+            // Primary fields
+            match passStructure.primaryFields with
+            | None -> Html.empty ()
+            | Some fields ->
+                div {
+                    ``class`` "flex"
+                    forEach fields renderPrimaryField
+                }
+
+            // Secondary fields below
+            match passStructure.secondaryFields with
+            | None -> Html.empty ()
+            | Some fields ->
+                div {
+                    ``class`` "flex"
+                    forEach fields renderPrimaryField
+                }
+        }
+
+        match model.thumbnail with
+        | None -> Html.empty ()
+        | Some (PassThumbnail (Image.Base64 base64String)) ->
+            let source = createPngDataUrl base64String
+
+            img {
+                ``class`` "w-1/3 rounded-2xl"
+                src source
+            }
+    }
+let auxiliaryFields passStructure =
+    match passStructure.auxiliaryFields with
+    | None -> Html.empty ()
+    | Some fields ->
+        div {
+            ``class`` "flex"
+            forEach fields renderPrimaryField
+        }
+let barcode (passDefinition : PassDefinition) =
+    match passDefinition.barcode with
+    | None -> Html.empty ()
+    | Some (Barcode (alternateText, format, message, messageEncoding)) ->
+        match format with
+        | Qr ->
+            let (Image.Base64 base64String) =
+                Barcode.createQrCode message
+
+            let source = createPngDataUrl base64String
+
+            img {
+                ``class`` "rounded-3xl"
+                alt alternateText
+                src source
+            }
+        | _ -> div { "Sorry this barcode format is not yet supported :(" }
+
+let eventTicket model passDefinition passStructure =
+    div {
+        ``class``
+            "w-full rounded-3xl text-white p-3 \
+                   overflow-hidden \
+                   bg-repeat"
 
 
+        match model.background with
+        | None -> empty ()
+        | Some (PassBackground (Image.Base64 base64String)) ->
+            let source = createPngDataUrl base64String
+            style $"background-image: url({source})"
+
+        // Header row
+        headerRow model passStructure
+
+        // What I call "body"
+        // Body row
+        bodyRow model passStructure
+        // Auxiliary fields
+        auxiliaryFields passStructure
+
+        // Barcode
+        //TODO prefer barcodes over barcode which is deprecated-ish and use barcode as fallback
+        barcode passDefinition
+    }
+    
 let openPage model =
     concat {
         comp<PageTitle> { "Passes" }
@@ -177,109 +271,7 @@ let openPage model =
             | Some (Ok pass) ->
                 match pass with
                 | EventTicket (passDefinition, passStructure) ->
-                    // Pass card
-                    div {
-                        ``class``
-                            "w-full rounded-3xl text-white p-3 \
-                                   overflow-hidden \
-                                   bg-repeat"
-
-                        let createPngDataUrl base64String = $"data:image/png;base64,{base64String}"
-
-                        match model.background with
-                        | None -> empty ()
-                        | Some (PassBackground (Image.Base64 base64String)) ->
-                            let source = createPngDataUrl base64String
-                            style $"background-image: url({source})"
-
-                        // Header row
-                        div {
-                            ``class`` "flex justify-between items-center"
-
-                            match model.logo with
-                            | None -> Html.empty ()
-                            | Some (PassLogo (Image.Base64 base64String)) ->
-                                let source = createPngDataUrl base64String
-
-                                img {
-                                    ``class`` "w-1/3"
-                                    src source
-                                }
-                            //TODO logo text in between
-                            // Header fields
-                            match passStructure.headerFields with
-                            | None -> Html.empty ()
-                            | Some fields ->
-                                div {
-                                    ``class`` "flex"
-                                    forEach fields renderHeaderField
-                                }
-                        }
-
-                        // What I call "body"
-                        // Body row
-                        div {
-                            ``class`` "flex justify-between"
-
-                            div {
-                                ``class`` "flex flex-col"
-                                // Primary fields
-                                match passStructure.primaryFields with
-                                | None -> Html.empty ()
-                                | Some fields ->
-                                    div {
-                                        ``class`` "flex"
-                                        forEach fields renderPrimaryField
-                                    }
-
-                                // Secondary fields below
-                                match passStructure.secondaryFields with
-                                | None -> Html.empty ()
-                                | Some fields ->
-                                    div {
-                                        ``class`` "flex"
-                                        forEach fields renderPrimaryField
-                                    }
-                            }
-
-                            match model.thumbnail with
-                            | None -> Html.empty ()
-                            | Some (PassThumbnail (Image.Base64 base64String)) ->
-                                let source = createPngDataUrl base64String
-
-                                img {
-                                    ``class`` "w-1/3 rounded-2xl"
-                                    src source
-                                }
-                        }
-
-                        // Auxiliary fields
-                        match passStructure.auxiliaryFields with
-                        | None -> Html.empty ()
-                        | Some fields ->
-                            div {
-                                ``class`` "flex"
-                                forEach fields renderPrimaryField
-                            }
-
-                        // Barcode
-                        //TODO prefer barcodes over barcode which is deprecated-ish and use barcode as fallback
-                        match passDefinition.barcode with
-                        | None -> Html.empty ()
-                        | Some (Barcode (alternateText, format, message, messageEncoding)) ->
-                            match format with
-                            | Qr ->
-                                let (Image.Base64 base64String) =
-                                    Barcode.createQrCode message
-
-                                let source = createPngDataUrl base64String
-
-                                img {
-                                    ``class`` "rounded-3xl"
-                                    src source
-                                }
-                            | _ -> div { "Sorry this barcode format is not yet supported :(" }
-                    }
+                    eventTicket model passDefinition passStructure
                 | _ -> p { "Sorry this pass type is not yet supported :(" }
             | Some (Error error) ->
                 div {
@@ -295,7 +287,7 @@ let openPage model =
         }
     }
 
-let homePage model (dispatch: Message Dispatch) =
+let homePage (model : Model) (dispatch: Message Dispatch) =
     concat {
         
         comp<PageTitle> { "Passes" }
@@ -305,8 +297,12 @@ let homePage model (dispatch: Message Dispatch) =
                 "Passes"
             }
             
+            ul {
+                forEach model.cacheUrls (fun url -> li {url})
+            }
+            
             button {
-                on.click (fun _ -> dispatch RunTestJavaScript)
+                on.click (fun _ -> ())
                 "Add"
             }
         }
@@ -315,60 +311,75 @@ let homePage model (dispatch: Message Dispatch) =
 let view (model: Model) (dispatch: Message Dispatch) =
     match model.page with
     | Home -> homePage model dispatch
-    | Open -> openPage model 
+    | Open -> openPage model
+    | OpenFile fileName -> openPage model
 
 let router =
     Router.infer SetPage (fun model -> model.page)
 
 
-
+let getProperty<'T> (reference: IJSObjectReference) (properties : string array) (jsRuntime : IJSRuntime)  =
+        task {
+           let! asString = jsRuntime.InvokeAsync<string>("JSON.stringify", reference, properties)
+           return JsonSerializer.Deserialize<'T>(asString)
+        }
 let program (jsRuntime: IJSRuntime) logger (client: HttpClient) =
-    let runtime =
-        jsRuntime :?> IJSInProcessRuntime
+    let update = update jsRuntime logger client
 
-    let update = update jsRuntime logger
-
-    let createAsync (index: int) (jsModule: IJSObjectReference) =
+    
+    let laodCacheUrls () =
         task {
-            let! fileHandle = jsModule.InvokeAsync<IJSObjectReference>("getLoadedFile", index)
-            //let! fileHandle = jsModule.InvokeAsync<IJSObjectReference>("loadedPasses.at", index)
-            let! file = fileHandle.InvokeAsync<IJSObjectReference>("getFile")
+            let! cache =  jsRuntime |> CacheStorage.open' "files"
+            
+            Console.WriteLine "Opened cache"
+            let! requests = Cache.getKeys cache
+            let getRequestUrl request =
+                match request with
+                | Request reference -> getProperty<{|url:string|}> reference [|"url"|] jsRuntime
+                
+            let getUrlTasks = requests |> Seq.map getRequestUrl
+            let! urls = Task.WhenAll getUrlTasks
+            return urls |> Array.map (fun request -> request.url)
+            }
+//            match cache with
+//            | Cache reference ->
+//                let! array = reference.InvokeAsync<IJSInProcessObjectReference>("keys")
+//                do! JsConsole.log array jsRuntime
+//                let! requestAsJsObject =  array.InvokeAsync<IJSObjectReference>("at",0)
+//                //THIS works!
+//                let! stringified = jsRuntime.InvokeAsync<string>("JSON.stringify", requestAsJsObject, Array.singleton "url")
+//                let request = JsonSerializer.Deserialize<Request>(stringified)
+//                Console.WriteLine $"This should be a request object {request}"
+//
+//                do! JsConsole.log requestAsJsObject jsRuntime
 
-            let! objectUrl = runtime.InvokeAsync<string>("URL.createObjectURL", file)
-            let! fileName = jsModule.InvokeAsync<string>("getAttribute", file, "name")
-            return objectUrl, fileName
-        }
-
-    let loadFile (url: string, fileName: string) =
-        task {
-            use! browserStream = client.GetStreamAsync url
-
-            use fileStream = (File.OpenWrite fileName)
-
-            do! browserStream.CopyToAsync fileStream
-            return FileName fileName
-        }
-
-    let loadPass () =
-        task {
-            let! jsModule = runtime.InvokeAsync<IJSObjectReference>("import", "./module.js")
-            let! count = jsRuntime.InvokeAsync<int>("getStuff")
-
-            let! createTasks =
-                [| for index in 0 .. (count - 1) -> createAsync index jsModule |]
-                |> Task.WhenAll
-
-            return! createTasks |> Array.map loadFile |> Task.WhenAll
-        }
-
+            
+             
+//             Console.WriteLine "Got requests"
+//             let mutable index = 0
+//             // The urls represent all files we have saved in the cache
+//             use enumerator =requests.GetEnumerator ()
+//             while enumerator.MoveNext() && index < 5 do
+//                 index <- index + 1
+//                 let  request = enumerator.Current
+//                 logger.LogInformation("Request: {Request}", request)
+// //            for request in requests do
+// //                if index = 4 then
+// //                    break
+// //                else
+// //                logger.LogInformation("Request: {Request}", request)
+//             
+// //            let urls = requests |> Seq.map (fun request -> request.Url) |> Seq.toArray
+//             Console.WriteLine "Got urls"
+ 
     //let startCommand =
     //    Command.batch [ Command.OfFunc.either loadClientId () idToMessage idErrorToMessage
     //                    Command.OfFunc.either loadClientSecret () secretToMessage secretErrorToMessage ]
 
     let logError = LoadFilesError >> LogError
 
-    let startCommand =
-        Command.OfTask.either loadPass () SetPassFiles logError
+    let startCommand = 
+        Command.OfTask.either laodCacheUrls () SetPassCacheUrls logError
 
     Program.mkProgram (fun _ -> initializeModel (), startCommand) update view
     |> Program.withRouter router

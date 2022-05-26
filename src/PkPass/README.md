@@ -15,3 +15,4 @@ https://developer.apple.com/library/archive/documentation/UserExperience/Concept
   * Through vanilla file input
   * Through drag & drop
   * Through openShowFilePicker API
+  * Through clipboard
