@@ -44,14 +44,16 @@ async function onFetch(event) {
             // Get file name from query
             const cache = await caches.open("files");
             cachedResponse = await cache.match(event.request);
-        }
-        // For all navigation requests, try to serve index.html from cache
-        // If you need some URLs to be server-rendered, edit the following check to exclude those URLs
-        const shouldServeIndexHtml = event.request.mode === 'navigate';
+        } else {
+            // For all navigation requests, try to serve index.html from cache
+            // If you need some URLs to be server-rendered, edit the following check to exclude those URLs
+            const shouldServeIndexHtml = event.request.mode === 'navigate';
 
-        const request = shouldServeIndexHtml ? "index.html" : event.request;
-        const cache = await caches.open(cacheName);
-        cachedResponse = await cache.match(request);
+            const request = shouldServeIndexHtml ? "index.html" : event.request;
+            const cache = await caches.open(cacheName);
+            cachedResponse = await cache.match(request);
+        }
+
     }
 
     return cachedResponse || fetch(event.request);
