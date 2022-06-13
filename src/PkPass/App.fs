@@ -24,21 +24,31 @@ open PkPass.PassKit.Package
 
 module Command = Cmd
 
+type PassDetailsPageModel = PassDetailsPageModel of Result<Pass, DeserializationError>
+
 type Page =
     | [<EndPoint "/">] Home
     | [<EndPoint "/open">] Open
-    | [<EndPoint "/open/{fileName}">] OpenFile of fileName: string 
+    | [<EndPoint "/open/{fileName}">] OpenFile of fileName: string
+    | [<EndPoint "/pass/details">] ShowPass of PageModel<PassDetailsPageModel>
 
 type FileName = FileName of string
 
 
+type Error =
+    | LoadUrlsError of Exception
+    | LoadFromCacheError of Exception
+    | FileNameNotFound of fileName: string
+    | Unexpected of Exception
+
 type Model =
     { page: Page
-      cacheUrls : string array
+      cacheUrls: string array
       background: PassBackground option
       logo: PassLogo option
       thumbnail: PassThumbnail option
-      passResult: Result<Pass, DeserializationError> option }
+      passResult: Result<Pass, DeserializationError> option
+      packageResult: Result<PassPackage, Error> option }
 
 let initializeModel () =
     { page = Home
@@ -46,13 +56,14 @@ let initializeModel () =
       background = None
       logo = None
       thumbnail = None
-      passResult = None }
+      passResult = None
+      packageResult = None }
 
-type Error = LoadFilesError of exn
 
 type Message =
     | SetPage of Page
     | SetPassCacheUrls of string array
+    | SetLoadPassPackageResult of Result<PassPackage, Error>
     | SetPassResult of Result<Pass, DeserializationError> option
     | SetPassBackground of PassBackground option
     | SetPassLogo of PassLogo option
@@ -86,23 +97,75 @@ let update (jsRuntime: IJSRuntime) (logger: ILogger) (client: HttpClient) messag
     | SetPage page ->
         match page with
         | OpenFile fileName ->
-            // Load file and then open actual open page
-//            let loadCommand =
-//                load () = loadFromCache fileName
-//                Command.OfTask.perform load SetPackage
-            model, Command.none
+            // Find cache urls that end with file name
+            // Load pass from cache
+            let getPass (fileName: string) =
+                model.cacheUrls
+                |> Array.tryFind (fun url -> url.EndsWith fileName)
+                |> Option.map (fun url ->
+                    task {
+                        try
+                            // Load from cache
+                            let! stream = client.GetStreamAsync url
+                            return stream |> AsStream |> Ok
+                        with
+                        | exception' -> return LoadFromCacheError exception' |> Error
+                    })
+                |> Option.defaultValue (
+                    fileName
+                    |> FileNameNotFound
+                    |> Error
+                    |> Task.FromResult
+                )
+
+            let handleError exception' =
+                Message.LogError (Error.Unexpected exception')
+            let command = Command.OfTask.either getPass fileName SetLoadPassPackageResult handleError
+            model, command
         | _ -> { model with page = page }, Command.none
-    | SetPassCacheUrls urls ->
-        {model with cacheUrls = urls}, Command.none
+    | SetLoadPassPackageResult result ->
+        match result with
+        | Error error ->
+            { model with packageResult = Some result }, Command.none
+        | Ok package ->
+            // Set package and initialize loading pass
+            let loadPass package = package |> getPass |> Some
+            let handleError exception' =
+                Message.LogError (Error.Unexpected exception')
+            let command = Command.OfFunc.either loadPass package Message.SetPassResult handleError
+            { model with packageResult = Some result }, command
+    | SetPassResult passResultOption ->
+        
+        // Set result and switch to display page
+        let createPageModel model = { Model = model }
+
+        let command =
+            passResultOption
+            |> Option.map (fun result ->
+                Command.OfFunc.perform
+                    // Show pass page with result. Ye, nesting of these fun is no fun
+                    (fun () ->
+                        result
+                        |> PassDetailsPageModel
+                        |> createPageModel
+                        |> ShowPass)
+                    ()
+                    SetPage)
+            |> Option.defaultValue Command.none
+
+        { model with passResult = passResultOption }, command
+    | SetPassCacheUrls urls -> { model with cacheUrls = urls }, Command.none
     | SetPassBackground background -> { model with background = background }, Command.none
     | SetPassLogo logo -> { model with logo = logo }, Command.none
     | SetPassThumbnail thumbnail -> { model with thumbnail = thumbnail }, Command.none
-    | SetPassResult passResultOption -> { model with passResult = passResultOption }, Command.none
     | LogError error ->
         match error with
-        | LoadFilesError ``exception`` ->
-            logger.LogError(``exception``, "Error while loading files")
-            model, Command.none
+        | LoadUrlsError ``exception`` -> logger.LogError(``exception``, "Error while loading urls")
+        | FileNameNotFound fileName -> logger.LogError("Could not find file with this name in cache {Name}", fileName)
+        | LoadFromCacheError ``exception`` -> logger.LogError(``exception``, "Error while loading files from cache")
+        | Unexpected ``exception`` -> logger.LogError(``exception``, "An unexpected error occurred")
+        model, Command.none
+
 
 let renderHeaderField field =
     div {
@@ -147,32 +210,35 @@ let renderPrimaryField field =
             | _ -> String.Empty
         }
     }
+
 let createPngDataUrl base64String = $"data:image/png;base64,{base64String}"
+
 let headerRow model passStructure =
     div {
-    ``class`` "flex justify-between items-center"
+        ``class`` "flex justify-between items-center"
 
-    match model.logo with
-    | None -> Html.empty ()
-    | Some (PassLogo (Image.Base64 base64String)) ->
-        let source = createPngDataUrl base64String
+        match model.logo with
+        | None -> Html.empty ()
+        | Some (PassLogo (Image.Base64 base64String)) ->
+            let source = createPngDataUrl base64String
 
-        img {
-            ``class`` "w-1/3"
-            src source
-        }
-    //TODO logo text in between
-    // Header fields
-    match passStructure.headerFields with
-    | None -> Html.empty ()
-    | Some fields ->
-        div {
-            ``class`` "flex"
-            forEach fields renderHeaderField
-        }
+            img {
+                ``class`` "w-1/3"
+                src source
+            }
+        //TODO logo text in between
+        // Header fields
+        match passStructure.headerFields with
+        | None -> Html.empty ()
+        | Some fields ->
+            div {
+                ``class`` "flex"
+                forEach fields renderHeaderField
+            }
     }
+
 let bodyRow model passStructure =
-     div {
+    div {
         ``class`` "flex justify-between"
 
         div {
@@ -206,6 +272,7 @@ let bodyRow model passStructure =
                 src source
             }
     }
+
 let auxiliaryFields passStructure =
     match passStructure.auxiliaryFields with
     | None -> Html.empty ()
@@ -214,14 +281,14 @@ let auxiliaryFields passStructure =
             ``class`` "flex"
             forEach fields renderPrimaryField
         }
-let barcode (passDefinition : PassDefinition) =
+
+let barcode (passDefinition: PassDefinition) =
     match passDefinition.barcode with
     | None -> Html.empty ()
     | Some (Barcode (alternateText, format, message, messageEncoding)) ->
         match format with
         | Qr ->
-            let (Image.Base64 base64String) =
-                Barcode.createQrCode message
+            let (Image.Base64 base64String) = Barcode.createQrCode message
 
             let source = createPngDataUrl base64String
 
@@ -259,7 +326,7 @@ let eventTicket model passDefinition passStructure =
         //TODO prefer barcodes over barcode which is deprecated-ish and use barcode as fallback
         barcode passDefinition
     }
-    
+
 let openPage model =
     concat {
         comp<PageTitle> { "Passes" }
@@ -270,8 +337,7 @@ let openPage model =
             match model.passResult with
             | Some (Ok pass) ->
                 match pass with
-                | EventTicket (passDefinition, passStructure) ->
-                    eventTicket model passDefinition passStructure
+                | EventTicket (passDefinition, passStructure) -> eventTicket model passDefinition passStructure
                 | _ -> p { "Sorry this pass type is not yet supported :(" }
             | Some (Error error) ->
                 div {
@@ -287,20 +353,35 @@ let openPage model =
         }
     }
 
-let homePage (model : Model) (dispatch: Message Dispatch) =
+let homePage (model: Model) (dispatch: Message Dispatch) =
     concat {
-        
+
         comp<PageTitle> { "Passes" }
+
         main {
             ``class`` "p-4"
-            h1 {
-                "Passes"
-            }
-            
+            h1 { "Passes" }
+
             ul {
-                forEach model.cacheUrls (fun url -> li {url})
+                forEach model.cacheUrls (fun url ->
+                    li {
+                        a {
+                            href url
+                            url
+                        }
+                    })
+
+                li {
+                    a {
+                        href "https://localhost:62042/open/pass.pkpass"
+                        "GO"
+                    }
+                    input {
+                        ``type`` "checkbox"
+                    }
+                }
             }
-            
+
             button {
                 on.click (fun _ -> ())
                 "Add"
@@ -308,78 +389,74 @@ let homePage (model : Model) (dispatch: Message Dispatch) =
         }
     }
 
+let passDetails (PassDetailsPageModel pageModel) model =
+    match pageModel with
+    //TODO actual error card/info/something
+    | Error error -> div { "Oh no something went wrong and there should be a helpful error card here but it isn't. Sorry :L" }
+    | Ok pass ->
+        match pass with
+        | EventTicket (passDefinition, passStructure) -> eventTicket model passDefinition passStructure
+        | _ -> p { "Sorry this pass type is not yet supported :(" }
+        
 let view (model: Model) (dispatch: Message Dispatch) =
     match model.page with
     | Home -> homePage model dispatch
     | Open -> openPage model
     | OpenFile fileName -> openPage model
+    //TODO put all required properties like background in page model
+    | ShowPass { Model = pageModel } -> passDetails pageModel model
 
-let router =
-    Router.infer SetPage (fun model -> model.page)
+
+//let router = Router.infer SetPage (fun model -> model.page)
+let router: Router<Page, Model, Message> =
+    { getEndPoint = fun model -> model.page
+      setRoute =
+        fun path ->
+            match path.Trim('/').Split('/') with
+            | [||] -> Some Page.Home
+            | [| "open" |] -> Some Page.Open
+            | [| "open"; fileName |] ->
+                Some(Page.OpenFile(fileName))
+            | _ -> Some Page.Home
+            |> Option.map SetPage
+      getRoute =
+        function
+        | Home -> "/"
+        | Open -> "/open"
+        | OpenFile fileName -> $"/open/{fileName}"
+        | _ -> "/" }
 
 
-let getProperty<'T> (reference: IJSObjectReference) (properties : string array) (jsRuntime : IJSRuntime)  =
-        task {
-           let! asString = jsRuntime.InvokeAsync<string>("JSON.stringify", reference, properties)
-           return JsonSerializer.Deserialize<'T>(asString)
-        }
+let getProperty<'T> (reference: IJSObjectReference) (properties: string array) (jsRuntime: IJSRuntime) =
+    task {
+        let! asString = jsRuntime.InvokeAsync<string>("JSON.stringify", reference, properties)
+        return JsonSerializer.Deserialize<'T>(asString)
+    }
+
 let program (jsRuntime: IJSRuntime) logger (client: HttpClient) =
     let update = update jsRuntime logger client
 
-    
-    let laodCacheUrls () =
+
+    let loadCacheUrls () =
         task {
-            let! cache =  jsRuntime |> CacheStorage.open' "files"
-            
+            let! cache = jsRuntime |> CacheStorage.open' "files"
+
             Console.WriteLine "Opened cache"
             let! requests = Cache.getKeys cache
+
             let getRequestUrl request =
                 match request with
-                | Request reference -> getProperty<{|url:string|}> reference [|"url"|] jsRuntime
-                
+                | Request reference -> getProperty<{| url: string |}> reference [| "url" |] jsRuntime
+
             let getUrlTasks = requests |> Seq.map getRequestUrl
+
             let! urls = Task.WhenAll getUrlTasks
             return urls |> Array.map (fun request -> request.url)
-            }
-//            match cache with
-//            | Cache reference ->
-//                let! array = reference.InvokeAsync<IJSInProcessObjectReference>("keys")
-//                do! JsConsole.log array jsRuntime
-//                let! requestAsJsObject =  array.InvokeAsync<IJSObjectReference>("at",0)
-//                //THIS works!
-//                let! stringified = jsRuntime.InvokeAsync<string>("JSON.stringify", requestAsJsObject, Array.singleton "url")
-//                let request = JsonSerializer.Deserialize<Request>(stringified)
-//                Console.WriteLine $"This should be a request object {request}"
-//
-//                do! JsConsole.log requestAsJsObject jsRuntime
+        }
 
-            
-             
-//             Console.WriteLine "Got requests"
-//             let mutable index = 0
-//             // The urls represent all files we have saved in the cache
-//             use enumerator =requests.GetEnumerator ()
-//             while enumerator.MoveNext() && index < 5 do
-//                 index <- index + 1
-//                 let  request = enumerator.Current
-//                 logger.LogInformation("Request: {Request}", request)
-// //            for request in requests do
-// //                if index = 4 then
-// //                    break
-// //                else
-// //                logger.LogInformation("Request: {Request}", request)
-//             
-// //            let urls = requests |> Seq.map (fun request -> request.Url) |> Seq.toArray
-//             Console.WriteLine "Got urls"
- 
-    //let startCommand =
-    //    Command.batch [ Command.OfFunc.either loadClientId () idToMessage idErrorToMessage
-    //                    Command.OfFunc.either loadClientSecret () secretToMessage secretErrorToMessage ]
+    let logError = LoadUrlsError >> LogError
 
-    let logError = LoadFilesError >> LogError
-
-    let startCommand = 
-        Command.OfTask.either laodCacheUrls () SetPassCacheUrls logError
+    let startCommand = Command.OfTask.either loadCacheUrls () SetPassCacheUrls logError
 
     Program.mkProgram (fun _ -> initializeModel (), startCommand) update view
     |> Program.withRouter router
@@ -402,5 +479,4 @@ type App() =
     member val HttpClient = Unchecked.defaultof<HttpClient> with get, set
 
 
-    override this.Program =
-        program this.JSRuntime this.Logger this.HttpClient
+    override this.Program = program this.JSRuntime this.Logger this.HttpClient
