@@ -17,47 +17,61 @@ type PassPackage =
     | InMemory of data: byte array
     | AsStream of Stream
 
-//TODO support loading from url or other sources. Might add additional dataUrl type to shift responsibility of knowing file type from consumer to producer 
-type Image = Base64 of string 
+//TODO support loading from url or other sources. Might add additional dataUrl type to shift responsibility of knowing file type from consumer to producer
+type Image = Base64 of string
 type PassBackground = PassBackground of Image
 type PassLogo = PassLogo of Image
 type PassThumbnail = PassThumbnail of Image
-let private getFileFromPackage fileName (package:PassPackage) =
-    match package with
-    | Compressed location ->
-        use zip = ZipFile.OpenRead location 
+
+let private getFileFromPackage fileName (package: PassPackage) =
+    let extractFromArchive (zip: ZipArchive) fileName =
         let entry = zip.GetEntry fileName
-        use entryStream = entry.Open ()
+        use entryStream = entry.Open()
         use memoryStream = new MemoryStream()
         entryStream.CopyTo memoryStream
         memoryStream.ToArray()
+
+    match package with
+    | Compressed location ->
+        use zip = ZipFile.OpenRead location
+        extractFromArchive zip fileName
     | Extracted location ->
-        let path = Path.Combine (location, fileName) 
+        let path = Path.Combine(location, fileName)
         File.ReadAllBytes path
     | InMemory data -> data
     | AsStream stream ->
-        match stream with
-        | :? MemoryStream as memoryStream -> memoryStream.ToArray()
-        | _ ->
-            use memoryStream = new MemoryStream()
-            memoryStream.ToArray()
-        
-        
-        
-let getPass (package : PassPackage) =
-    let data = getFileFromPackage "pass.json" package
+        use zip = new ZipArchive(stream)
+        extractFromArchive zip fileName
+
+
+let getPass (package: PassPackage) =
+    let data =
+        getFileFromPackage "pass.json" package
+
     let mutable reader = Utf8JsonReader data
     deserializePass &reader None PassDeserializationState.Default
 
 let getBackground (package: PassPackage) =
-    package |> getFileFromPackage "background.png" |> Convert.ToBase64String |> Image.Base64 |> PassBackground
+    package
+    |> getFileFromPackage "background.png"
+    |> Convert.ToBase64String
+    |> Image.Base64
+    |> PassBackground
 
 let getLogo (package: PassPackage) =
-    package |> getFileFromPackage "logo.png" |> Convert.ToBase64String |> Image.Base64 |> PassLogo
+    package
+    |> getFileFromPackage "logo.png"
+    |> Convert.ToBase64String
+    |> Image.Base64
+    |> PassLogo
 
 let getThumbnail (package: PassPackage) =
-    package |> getFileFromPackage "thumbnail.png" |> Convert.ToBase64String |> Image.Base64 |> PassThumbnail
-    
+    package
+    |> getFileFromPackage "thumbnail.png"
+    |> Convert.ToBase64String
+    |> Image.Base64
+    |> PassThumbnail
+
 
 type LoadPackageError =
     | UnexpectedError of Exception
@@ -66,15 +80,20 @@ type LoadPackageError =
 type AppError =
     | DeserializationError of DeserializationError
     | LoadPackageError of Exception
-let loadFromCache (fileName : string) (client: HttpClient) =
+
+let loadFromCache (fileName: string) (client: HttpClient) =
     task {
-          // Assume service worker loads this from cache
-          use! result = client.GetAsync("/files/" + fileName)
-          if result.IsSuccessStatusCode then
+        // Assume service worker loads this from cache
+        use! result = client.GetAsync("/files/" + fileName)
+
+        if result.IsSuccessStatusCode then
             use! stream = result.Content.ReadAsStreamAsync()
-            use fileStream = File.Open(Path.GetRandomFileName(),FileMode.OpenOrCreate )
+
+            use fileStream =
+                File.Open(Path.GetRandomFileName(), FileMode.OpenOrCreate)
+
             do! stream.CopyToAsync fileStream
-            return AsStream fileStream |> Ok 
-          else
-              return UnsuccessfulResponse result.StatusCode |> Error
+            return AsStream fileStream |> Ok
+        else
+            return UnsuccessfulResponse result.StatusCode |> Error
     }
