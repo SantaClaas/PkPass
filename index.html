@@ -180,15 +180,18 @@
             for (const fileHandle of launchParameters.files) {
                 console.info("Received file!", fileHandle);
                 // Save all loaded files to cache for app to pick up from when fully loaded 
-                const file = fileHandle.getFile();
-                // Can use the same as this handler because the HTTP Verb is different (GET not POST)
-                const path = `/files/${file.name}`;
-                const request = new Request(path, {method: "GET"});
-                const response = new Response(file, {status: 200, statusText: "OK"});
-                //TODO inform app to open newly added files
-                caches.open("files")
-                    .then(cache => cache.put(request, response))
-                    .catch(console.error);
+                fileHandle.getFile()
+                    .then(file => {
+                        // Can use the same as this handler because the HTTP Verb is different (GET not POST)
+                        console.log("Name is", file);
+                        const path = `/files/${file.name}`;
+                        const request = new Request(path, {method: "GET"});
+                        const response = new Response(file, {status: 200, statusText: "OK"});
+                        //TODO inform app to open newly added files
+                        caches.open("files")
+                            .then(cache => cache.put(request, response))
+                            .catch(console.error);
+                    });
             }
         })
 

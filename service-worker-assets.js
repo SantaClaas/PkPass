@@ -441,9 +441,9 @@
       "url": "icon-512.png"
     },
     {
-      "hash": "sha256-3REczxrKOKFOfu6eaJALQQZhvWyktI41vO3z9C01148=",
+      "hash": "sha256-n0cT7DB82PxvDRZs5xJaHW4ruyV\/I9H5Ce32dp5YK6U=",
       "url": "index.html"
     }
   ],
-  "version": "Q0\/8eG8+"
+  "version": "4+ko+7Q1"
 };
