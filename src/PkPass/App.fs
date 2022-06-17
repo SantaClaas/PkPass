@@ -97,6 +97,8 @@ let update (jsRuntime: IJSRuntime) (logger: ILogger) (client: HttpClient) messag
     | SetPage page ->
         match page with
         | OpenFile fileName ->
+            logger.LogInformation("Setting open file page with file '{File}'", fileName)
+
             // Find cache urls that end with file name
             // Load pass from cache
             let getPass (fileName: string) =
@@ -122,7 +124,16 @@ let update (jsRuntime: IJSRuntime) (logger: ILogger) (client: HttpClient) messag
                 Message.LogError (Error.Unexpected exception')
             let command = Command.OfTask.either getPass fileName SetLoadPassPackageResult handleError
             model, command
-        | _ -> { model with page = page }, Command.none
+        | Home ->
+            logger.LogInformation( "Setting home page")
+            { model with page = page }, Command.none
+        | Open ->
+            logger.LogInformation( "Setting open page")
+            { model with page = page }, Command.none
+        | ShowPass pageModel ->
+            logger.LogInformation "Setting show pass page "
+            { model with page = page }, Command.none
+//        | _ -> { model with page = page }, Command.none
     | SetLoadPassPackageResult result ->
         match result with
         | Error error ->
@@ -137,7 +148,7 @@ let update (jsRuntime: IJSRuntime) (logger: ILogger) (client: HttpClient) messag
     | SetPassResult passResultOption ->
         
         // Set result and switch to display page
-        let createPageModel model = { Model = model }
+        let createPageModel (model) = { Model = model }
 
         let command =
             passResultOption
@@ -412,19 +423,27 @@ let router: Router<Page, Model, Message> =
     { getEndPoint = fun model -> model.page
       setRoute =
         fun path ->
+            Console.WriteLine $"Setting route to {path}"
             match path.Trim('/').Split('/') with
             | [||] -> Some Page.Home
             | [| "open" |] -> Some Page.Open
             | [| "open"; fileName |] ->
-                Some(Page.OpenFile(fileName))
-            | _ -> Some Page.Home
+                fileName |> Page.OpenFile |> Some
+            | [| "pass"; "details" |] -> Router.noModel |> ShowPass |> Some
+            | _ ->
+                Console.WriteLine $"Could not find page for path '{path}'"
+                None
             |> Option.map SetPage
-      getRoute =
-        function
-        | Home -> "/"
-        | Open -> "/open"
-        | OpenFile fileName -> $"/open/{fileName}"
-        | _ -> "/" }
+      getRoute = fun page ->
+        let route =
+            match page with
+            | Home -> "/"
+            | Open -> "/open"
+            | OpenFile fileName -> $"/open/{fileName}"
+            | ShowPass pageModel -> "/pass/details"
+        Console.WriteLine $"Got route {route}"
+        route
+        }
 
 
 let getProperty<'T> (reference: IJSObjectReference) (properties: string array) (jsRuntime: IJSRuntime) =

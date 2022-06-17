@@ -28,6 +28,7 @@ async function onFetch(event) {
 
     }
 
+    // Post to open is to be interpreted as file shared through share target API/PWA feature
     if (event.request.method === "POST" && url.pathname === "/open") {
         const formData = await event.request.formData();
         const title = formData.get("title");
@@ -40,11 +41,19 @@ async function onFetch(event) {
         await cache.put(request, response);
         return Response.redirect(`/open/${file.name}`, 303);
     } else if (event.request.method === 'GET') {
+        // We use the files path to save and retrieve files from the cache through the service worker
+        // When the .NET HTTP client calls the endpoint the service worker returns the file from cache
         if (url.pathname.startsWith("/files")) {
             // Get file name from query
             const cache = await caches.open("files");
             cachedResponse = await cache.match(event.request);
-        } else {
+            
+        } 
+        // Else if it is open navigation after file handling saved the file to cache and opens open page, we return index.html and let the app router take over. This should happen automatically during production when stuff is cached and the cache takes over in the other branch
+        else if(url.pathname.startsWith("/open")){
+            return fetch("index.html");
+        }
+        else {
             // For all navigation requests, try to serve index.html from cache
             // If you need some URLs to be server-rendered, edit the following check to exclude those URLs
             const shouldServeIndexHtml = event.request.mode === 'navigate';

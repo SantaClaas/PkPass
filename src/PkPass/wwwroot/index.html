@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#d800e9">
     <meta name="accent-color" content="#d800e9">
     <!--For dark/light mode specifically-->
-    <!--<meta name="theme-color" content="#872e4e" media="(prefers-color-scheme: dark)">-->
+    <meta name="theme-color" content="#872e4e" media="(prefers-color-scheme: dark)">
     <!-- Make app installable -->
     <link href="app.json.webmanifest" rel="manifest"/>
 
@@ -169,6 +169,10 @@
 <script>
     if ('launchQueue' in window && 'files' in LaunchParams.prototype) {
         console.info("File Handling API is supported! 🥳🎉");
+        /* 
+         * This will receive files through the OS file handler registration. 
+         * Share target file sharing is received by service worker 
+         */
         launchQueue.setConsumer((launchParameters) => {
             // Nothing to do when the queue is empty
             if (!launchParameters.files.length) {
@@ -183,13 +187,13 @@
                 fileHandle.getFile()
                     .then(file => {
                         // Can use the same as this handler because the HTTP Verb is different (GET not POST)
-                        console.log("Name is", file);
                         const path = `/files/${file.name}`;
                         const request = new Request(path, {method: "GET"});
                         const response = new Response(file, {status: 200, statusText: "OK"});
                         //TODO inform app to open newly added files
                         caches.open("files")
                             .then(cache => cache.put(request, response))
+                            .then(() => window.open("/open/" + file.name, "_self"))
                             .catch(console.error);
                     });
             }
