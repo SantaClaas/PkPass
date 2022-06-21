@@ -116,7 +116,8 @@ let loadPassDataFromCacheUrl (client: HttpClient) (url: string) =
     task {
         try
             let! stream = client.GetStreamAsync url
-            return stream |> AsStream |> Ok
+            let archive = new ZipArchive(stream)
+            return archive |> AsZip |> Ok
         with
         | exception' -> return LoadPassDataFromCacheError exception' |> Error
     }
@@ -133,7 +134,7 @@ let loadPassesDataFromCacheUrls (client: HttpClient) (urls: string array) =
 // We load all the data of the passes at once (for now) instead of a more complex lazy approach that can be implemented later
 let loadPass (package: PassPackageData) : Result<PassPackage, DeserializationError> =
     let pass = getPass package
-
+    
     match pass with
     | Error error -> Error error
     | Ok pass ->

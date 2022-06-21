@@ -17,7 +17,7 @@ type PassPackageData =
     | Compressed of location: string
     | Extracted of location: string
     | InMemory of data: byte array
-    | AsStream of Stream
+    | AsZip of ZipArchive
 
 
 //TODO support loading from url or other sources. Might add additional dataUrl type to shift responsibility of knowing file type from consumer to producer
@@ -40,7 +40,7 @@ let private getFileFromPackage fileName (package: PassPackageData) =
         use memoryStream = new MemoryStream()
         entryStream.CopyTo memoryStream
         memoryStream.ToArray()
-
+    Console.WriteLine $"Trying to get file {fileName} from package {package}"
     match package with
     | Compressed location ->
         use zip = ZipFile.OpenRead location
@@ -49,9 +49,10 @@ let private getFileFromPackage fileName (package: PassPackageData) =
         let path = Path.Combine(location, fileName)
         File.ReadAllBytes path
     | InMemory data -> data
-    | AsStream stream ->
-        use zip = new ZipArchive(stream)
-        extractFromArchive zip fileName
+    | AsZip zipArchive ->
+        extractFromArchive zipArchive fileName
+        
+        
 
 
 let getPass (package: PassPackageData) =
@@ -103,7 +104,9 @@ let loadFromCache (fileName: string) (client: HttpClient) =
                 File.Open(Path.GetRandomFileName(), FileMode.OpenOrCreate)
 
             do! stream.CopyToAsync fileStream
-            return AsStream fileStream |> Ok
+            let archive = new ZipArchive(fileStream)
+            return archive |> AsZip |> Ok
+//            return AsStream fileStream |> Ok
         else
             return UnsuccessfulResponse result.StatusCode |> Error
     }

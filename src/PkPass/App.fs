@@ -109,7 +109,9 @@ let update (jsRuntime: IJSRuntime) (logger: ILogger) (client: HttpClient) messag
                         try
                             // Load from cache
                             let! stream = client.GetStreamAsync url
-                            return stream |> AsStream |> Ok
+                            let archive = new ZipArchive(stream)
+                            return archive |> AsZip |> Ok
+//                            return stream |> AsStream |> Ok
                         with
                         | exception' -> return LoadFromCacheError exception' |> Error
                     })
