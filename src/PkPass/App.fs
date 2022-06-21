@@ -48,7 +48,7 @@ type Model =
       logo: PassLogo option
       thumbnail: PassThumbnail option
       passResult: Result<Pass, DeserializationError> option
-      packageResult: Result<PassPackage, Error> option }
+      packageResult: Result<PassPackageData, Error> option }
 
 let initializeModel () =
     { page = Home
@@ -63,7 +63,7 @@ let initializeModel () =
 type Message =
     | SetPage of Page
     | SetPassCacheUrls of string array
-    | SetLoadPassPackageResult of Result<PassPackage, Error>
+    | SetLoadPassPackageResult of Result<PassPackageData, Error>
     | SetPassResult of Result<Pass, DeserializationError> option
     | SetPassBackground of PassBackground option
     | SetPassLogo of PassLogo option
@@ -452,7 +452,7 @@ let getProperty<'T> (reference: IJSObjectReference) (properties: string array) (
         return JsonSerializer.Deserialize<'T>(asString)
     }
 
-let program (jsRuntime: IJSRuntime) logger (client: HttpClient) =
+let createProgram (jsRuntime: IJSRuntime) logger (client: HttpClient) =
     let update = update jsRuntime logger client
 
 
@@ -477,8 +477,8 @@ let program (jsRuntime: IJSRuntime) logger (client: HttpClient) =
 
     let startCommand = Command.OfTask.either loadCacheUrls () SetPassCacheUrls logError
 
-    Program.mkProgram (fun _ -> initializeModel (), startCommand) update view
-    |> Program.withRouter router
+    let program = Program.mkProgram (fun _ -> initializeModel (), startCommand) update view
+    Program.withRouter router program 
 
 
 type App() =
@@ -498,4 +498,4 @@ type App() =
     member val HttpClient = Unchecked.defaultof<HttpClient> with get, set
 
 
-    override this.Program = program this.JSRuntime this.Logger this.HttpClient
+    override this.Program = createProgram this.JSRuntime this.Logger this.HttpClient

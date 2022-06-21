@@ -26,6 +26,7 @@
         <Compile Include="Interop\LocalStorage.fs" />
         <Compile Include="Interop\Caches.fs" />
         <Compile Include="App.fs" />
+        <Compile Include="App2.fs" />
         <Compile Include="Startup.fs" />
     </ItemGroup>
 
