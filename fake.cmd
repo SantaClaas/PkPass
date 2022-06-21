@@ -1,2 +1,3 @@
 dotnet tool restore
-dotnet fake %*
+REM dotnet fake %*
+dotnet fake build
