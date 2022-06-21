@@ -1,11 +1,13 @@
-﻿module PkPass.App2
+module PkPass.App2
 
 open System
+open System.IO.Compression
 open System.Net.Http
 open System.Text.Json
 open System.Threading.Tasks
 open Bolero
 open Bolero.Html
+open Microsoft.AspNetCore.Components
 open Microsoft.Extensions.Logging
 open Microsoft.JSInterop
 open PkPass.Client.App
@@ -182,11 +184,11 @@ let createInitialLoadCommand (jsRuntime: IJSRuntime) (httpClient: HttpClient) =
 
 
 
-let createProgram () =
+let createProgram (jsRuntime: IJSRuntime) (httpClient: HttpClient)=
     // When the app starts it should be set into a loading state with an initial command that loads the cached passes
     // And then sets the loading state to complete
     let initialize _ =
-        { activePage = AppPage.Home LoadingPasses }, Cmd.none
+        { activePage = AppPage.Home LoadingPasses }, createInitialLoadCommand jsRuntime httpClient
 
     Program.mkProgram initialize update view
     |> Program.withRouter router
@@ -194,4 +196,7 @@ let createProgram () =
 type App2() =
     inherit ProgramComponent<AppModel, AppMessage>()
 
-    override this.Program = createProgram ()
+    [<Inject>]
+    member val HttpClient = Unchecked.defaultof<HttpClient> with get, set
+
+    override this.Program = createProgram this.JSRuntime this.HttpClient
