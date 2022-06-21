@@ -8,9 +8,7 @@ open System.Threading.Tasks
 open Bolero
 open Bolero.Html
 open Microsoft.AspNetCore.Components
-open Microsoft.Extensions.Logging
 open Microsoft.JSInterop
-open PkPass.Client.App
 open PkPass.Interop
 open PkPass.PassKit.Deserialization
 open PkPass.PassKit.Package
@@ -44,7 +42,15 @@ type AppModel = { activePage: AppPage }
 
 open Elmish
 
-let updateHomePage (message: HomePageMessage) (model: AppModel) = model, Cmd.none
+let updateHomePage (message: HomePageMessage) (model: AppModel) =
+    match message with
+    | SetPassLoadResult results ->
+        model,
+        results
+        |> HomePageModel.PassesLoaded
+        |> AppPage.Home
+        |> SetPage
+        |> Cmd.ofMsg
 
 let update (message: AppMessage) (model: AppModel) =
     match message with
@@ -134,7 +140,7 @@ let loadPassesDataFromCacheUrls (client: HttpClient) (urls: string array) =
 // We load all the data of the passes at once (for now) instead of a more complex lazy approach that can be implemented later
 let loadPass (package: PassPackageData) : Result<PassPackage, DeserializationError> =
     let pass = getPass package
-    
+
     match pass with
     | Error error -> Error error
     | Ok pass ->
@@ -185,7 +191,7 @@ let createInitialLoadCommand (jsRuntime: IJSRuntime) (httpClient: HttpClient) =
 
 
 
-let createProgram (jsRuntime: IJSRuntime) (httpClient: HttpClient)=
+let createProgram (jsRuntime: IJSRuntime) (httpClient: HttpClient) =
     // When the app starts it should be set into a loading state with an initial command that loads the cached passes
     // And then sets the loading state to complete
     let initialize _ =
@@ -200,4 +206,5 @@ type App2() =
     [<Inject>]
     member val HttpClient = Unchecked.defaultof<HttpClient> with get, set
 
-    override this.Program = createProgram this.JSRuntime this.HttpClient
+    override this.Program =
+        createProgram this.JSRuntime this.HttpClient

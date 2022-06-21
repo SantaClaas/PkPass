@@ -40,7 +40,7 @@ let private getFileFromPackage fileName (package: PassPackageData) =
         use memoryStream = new MemoryStream()
         entryStream.CopyTo memoryStream
         memoryStream.ToArray()
-    Console.WriteLine $"Trying to get file {fileName} from package {package}"
+
     match package with
     | Compressed location ->
         use zip = ZipFile.OpenRead location
@@ -49,11 +49,7 @@ let private getFileFromPackage fileName (package: PassPackageData) =
         let path = Path.Combine(location, fileName)
         File.ReadAllBytes path
     | InMemory data -> data
-    | AsZip zipArchive ->
-        extractFromArchive zipArchive fileName
-        
-        
-
+    | AsZip zipArchive -> extractFromArchive zipArchive fileName
 
 let getPass (package: PassPackageData) =
     let data =
@@ -106,7 +102,6 @@ let loadFromCache (fileName: string) (client: HttpClient) =
             do! stream.CopyToAsync fileStream
             let archive = new ZipArchive(fileStream)
             return archive |> AsZip |> Ok
-//            return AsStream fileStream |> Ok
         else
             return UnsuccessfulResponse result.StatusCode |> Error
     }
