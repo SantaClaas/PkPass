@@ -37,19 +37,15 @@ type JsEnumerator<'T>(array: Array) =
 
     interface System.Collections.IEnumerator with
         member this.MoveNext() =
-            Console.WriteLine "Called next"
             let value = currentIterator.Invoke<{| value: int; ``done``: bool |}>("next")
-            Console.WriteLine $"value is {value}"
 
             if value.``done`` then
                 false
             else 
                 current <-
                     match array with
-                    | Array reference ->
-                        
+                    | Array reference ->                        
                         reference.Invoke<'T>("at", value.value) |> Some
-                Console.WriteLine $"Set current to {current}"
                 true
 
         member this.Current = box current
