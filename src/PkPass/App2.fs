@@ -81,10 +81,49 @@ let router: Router<AppPage, AppModel, AppMessage> =
             |> Some
       getRoute = fun page -> "/" }
 
+let createPngDataUrl base64String = $"data:image/png;base64,{base64String}"
+
 let homePage (model: HomePageModel) (dispatch: AppMessage Dispatch) =
     match model with
     | LoadingPasses -> main { "Loading passes..." }
-    | PassesLoaded passes -> main { h1 { "Passes" } }
+    | PassesLoaded loadResults ->
+        main {
+            attr.``class`` "p-4"
+            h1 {
+                attr.``class`` "text-5xl font-light mb-3"
+                "Passes"
+            }
+
+            ul {
+                forEach loadResults (fun result ->
+                    match result with
+                    | Error loadPassError -> p { "Sorry could not load that pass" }
+                    | Ok passPackage ->
+                        match passPackage.pass with
+                        | EventTicket (passDefinition, passStructure) ->
+                            div {
+                                attr.``class`` "bg-white/5 flex gap-2 p-3 rounded-xl"
+                                
+                                match passPackage.thumbnail with
+                                | PassThumbnail(Image.Base64 base64String) ->
+                                    img {
+                                        attr.``class`` "w-1/3"
+                                        base64String |> createPngDataUrl |> attr.src
+                                    }
+                                    
+                                match passStructure.primaryFields with
+                                | Some [first] ->
+                                    h2 {
+                                        match first.value with
+                                        | Date dateTimeOffset -> dateTimeOffset.ToString()
+                                        | Number number -> number.ToString()
+                                        | LocalizableString (LocalizableString.LocalizableString value) -> value
+                                    }
+                                | _ -> empty ()
+                            }
+                        | _ -> div { "Sorry this pass type is not supported yet" })
+            }
+        }
 
 let view (model: AppModel) (dispatch: AppMessage Dispatch) =
     match model.activePage with
