@@ -28,7 +28,8 @@
         <Compile Include="Interop\JsConsole.fs" />
         <Compile Include="Interop\CachesStorage.fs" />
         <Compile Include="Interop\Window.fs" />
-        <Compile Include="App2.fs" />
+        <Compile Include="HomePage.fs" />
+        <Compile Include="App.fs" />
         <Compile Include="Startup.fs" />
     </ItemGroup>
 
