@@ -89,8 +89,9 @@ let homePage (model: HomePageModel) (dispatch: AppMessage Dispatch) =
     | PassesLoaded loadResults ->
         main {
             attr.``class`` "p-4"
+
             h1 {
-                attr.``class`` "text-5xl font-light mb-3"
+                attr.``class`` "text-xl font-lighter mb-2 tracking-widest"
                 "Passes"
             }
 
@@ -102,24 +103,62 @@ let homePage (model: HomePageModel) (dispatch: AppMessage Dispatch) =
                         match passPackage.pass with
                         | EventTicket (passDefinition, passStructure) ->
                             div {
-                                attr.``class`` "bg-white/5 flex gap-2 p-3 rounded-xl"
-                                
+                                attr.``class`` "bg-white/5 flex gap-3 p-3 rounded-xl justify-between"
+
                                 match passPackage.thumbnail with
-                                | PassThumbnail(Image.Base64 base64String) ->
+                                | PassThumbnail (Image.Base64 base64String) ->
                                     img {
-                                        attr.``class`` "w-1/3"
+                                        attr.``class`` "w-20"
                                         base64String |> createPngDataUrl |> attr.src
                                     }
-                                    
-                                match passStructure.primaryFields with
-                                | Some [first] ->
-                                    h2 {
-                                        match first.value with
-                                        | Date dateTimeOffset -> dateTimeOffset.ToString()
-                                        | Number number -> number.ToString()
-                                        | LocalizableString (LocalizableString.LocalizableString value) -> value
+
+                                div {
+                                    attr.``class`` "flex flex-col justify-between"
+
+                                    div {
+                                        match passStructure.primaryFields with
+                                        | Some [ first ] ->
+                                            match first.label with
+                                            | Some (LocalizableString.LocalizableString label) ->
+                                                h3 {
+                                                    attr.``class`` "text-xs font-bold uppercase tracking-wide text-emphasis-low"
+                                                    label
+                                                }
+                                            | _ -> empty ()
+
+                                            h2 {
+                                                attr.``class`` "leading-none text-lg font-light text-emphasis-high"
+
+                                                match first.value with
+                                                | Date dateTimeOffset -> dateTimeOffset.ToString()
+                                                | Number number -> number.ToString()
+                                                | LocalizableString (LocalizableString.LocalizableString value) -> value
+                                            }
+                                        | _ -> empty ()
                                     }
-                                | _ -> empty ()
+
+                                    div {
+                                        match passStructure.secondaryFields with
+                                        | Some [ first ] ->
+                                            match first.label with
+                                            | Some (LocalizableString.LocalizableString label) ->
+                                                h5 {
+                                                    attr.``class`` "text-xs text-emphasis-low uppercase"
+                                                    label
+                                                }
+                                            | _ -> empty ()
+
+                                            h4 {
+                                                attr.``class`` "leading-none text-sm font-medium text-emphasis-medium"
+
+                                                match first.value with
+                                                | Date dateTimeOffset -> dateTimeOffset.ToString()
+                                                | Number number -> number.ToString()
+                                                | LocalizableString (LocalizableString.LocalizableString value) -> value
+                                            }
+                                        | _ -> empty ()
+                                    }
+                                }
                             }
                         | _ -> div { "Sorry this pass type is not supported yet" })
             }
