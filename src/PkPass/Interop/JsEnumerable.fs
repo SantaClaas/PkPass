@@ -4,23 +4,7 @@ open System
 open System.Collections.Generic
 open Microsoft.JSInterop
 
-type CacheStorage = CacheStorage of IJSObjectReference
-type Cache = Cache of IJSObjectReference
-
-// Get this from keys()
-type JsIterator = JsIterator of IJSObjectReference
-
 type JsArray = JsArray of IJSInProcessObjectReference
-
-type Request = Request of IJSObjectReference
-[<RequireQualifiedAccess>]
-type JsObjectReferences =
-    | CacheStorage of CacheStorage
-    | Cache of CacheStorage
-    | Iterator of JsIterator
-    | Array of JsArray
-    | Request of Request
-// Does not work on (Blazor) server hosting model because of synchronous interop
 type JsEnumerator<'T>(array: JsArray) =
 
 //TODO use values api not keys to reduce it to one interop call
@@ -68,6 +52,7 @@ type JsEnumerator<'T>(array: JsArray) =
             match array with
             | JsArray reference -> reference.DisposeAsync()
 
+
 type JsEnumerable<'T>(array: JsArray) =
     interface IEnumerable<'T option> with
         member this.GetEnumerator() : IEnumerator<'T option> =
@@ -75,46 +60,3 @@ type JsEnumerable<'T>(array: JsArray) =
 
         member this.GetEnumerator() : Collections.IEnumerator =
             new JsEnumerator<'T>(array) :> Collections.IEnumerator
-
-
-module JsConsole =
-    let log (reference : IJSObjectReference) (jsRuntime: IJSRuntime) =
-        jsRuntime.InvokeVoidAsync("console.log", reference)
-
-
-module CacheStorage =
-    let open' (name: String) (jsRuntime: IJSRuntime) =
-        task {
-            let! cache = jsRuntime.InvokeAsync<IJSObjectReference>("caches.open", name)
-            do! JsConsole.log cache jsRuntime
-            return Cache cache
-        }
-    let getKeys =
-        function
-        | CacheStorage.CacheStorage reference ->
-            task {
-                let! cachesArray = reference.InvokeAsync<IJSInProcessObjectReference>("keys")
-
-                return
-                    cachesArray
-                    |> JsArray
-                    |> JsEnumerable<IJSObjectReference>
-                    |> Seq.choose id
-                    |> Seq.map Cache
-            }
-
-module Cache =
-    let getKeys =
-        function
-        | Cache reference ->
-            task {
-                // Returns a promise with an array of Requests that we should be able to use as in process reference
-                let! requestsArray = reference.InvokeAsync<IJSInProcessObjectReference>("keys")
-                return
-                    requestsArray
-                    |> JsArray
-                    |> JsEnumerable<IJSObjectReference>
-                    |> Seq.choose id
-                    |> Seq.map Request
-            }
-            

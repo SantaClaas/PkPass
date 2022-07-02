@@ -24,7 +24,9 @@
         <Compile Include="Interop\Module.fs" />
         <Compile Include="Interop\FileSystemFileHandle.fs" />
         <Compile Include="Interop\LocalStorage.fs" />
-        <Compile Include="Interop\Caches.fs" />
+        <Compile Include="Interop\JsEnumerable.fs" />
+        <Compile Include="Interop\JsConsole.fs" />
+        <Compile Include="Interop\CachesStorage.fs" />
         <Compile Include="Interop\Window.fs" />
         <Compile Include="App2.fs" />
         <Compile Include="Startup.fs" />
