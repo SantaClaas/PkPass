@@ -18,18 +18,19 @@ type LoadPassError =
     
 module HomePage =
     // Home page can be displaying loaded passes or it is currently loading passes
-    type HomePageModel =
+    type HomePageState =
         | LoadingPasses
         // Passes loaded and display load result
         | PassesLoaded of Result<PassPackage, LoadPassError> array
     
     type HomePage = HomePage
     
-    module HomePageModel =
+    module HomePageState =
         let ``default`` = LoadingPasses
 
     type HomePageError = UnknownError of Exception
     type HomePageMessage =
+        | LoadPasses
         | SetPassLoadResult of Result<PassPackage, LoadPassError> array
         | RequestFileFromUser
         | AddUserSelectedFiles of FileSystemFileHandle array
@@ -37,10 +38,13 @@ module HomePage =
         
         
     
-    let update (message: HomePageMessage) (model: HomePageModel) (jsRuntime: IJSRuntime) =
+    let update (message: HomePageMessage) (model: HomePageState) (jsRuntime: IJSRuntime) =
         match message with
+        | LoadPasses ->
+            Console.WriteLine "Uhm. This is awkward"
+            model, Cmd.none
         | SetPassLoadResult results ->
-            HomePageModel.PassesLoaded results, Cmd.none
+            HomePageState.PassesLoaded results, Cmd.none
         | RequestFileFromUser -> 
             let requestFile () =
                 let acceptedFileTypes =
@@ -63,7 +67,7 @@ module HomePage =
             model, Cmd.none
 
     let private createPngDataUrl base64String = $"data:image/png;base64,{base64String}"
-    let view (model: HomePageModel) (dispatch: HomePageMessage Dispatch) =
+    let view (model: HomePageState) (dispatch: HomePageMessage Dispatch) =
         Console.WriteLine $"Rendering home page with ${model.GetType()}"
         match model with
         | LoadingPasses -> main { "Loading passes..." }
