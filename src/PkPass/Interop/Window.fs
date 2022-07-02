@@ -12,7 +12,6 @@ type ShowOpenFilePickerOptions =
 
 let showOpenFilePicker (options: ShowOpenFilePickerOptions) (jsRuntime: IJSRuntime) =
     task {
-        Console.WriteLine (JsonSerializer.Serialize options)
         let! fileHandlesArray = jsRuntime.InvokeAsync<IJSInProcessObjectReference>("window.showOpenFilePicker", options)
 
         return
