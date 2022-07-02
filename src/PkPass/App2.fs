@@ -108,7 +108,7 @@ let homePage (model: HomePageModel) (dispatch: AppMessage Dispatch) =
                                 match passPackage.thumbnail with
                                 | PassThumbnail (Image.Base64 base64String) ->
                                     img {
-                                        attr.``class`` "w-20"
+                                        attr.``class`` "w-20 rounded-lg"
                                         base64String |> createPngDataUrl |> attr.src
                                     }
 
@@ -121,18 +121,26 @@ let homePage (model: HomePageModel) (dispatch: AppMessage Dispatch) =
                                             match first.label with
                                             | Some (LocalizableString.LocalizableString label) ->
                                                 h3 {
-                                                    attr.``class`` "text-xs font-bold uppercase tracking-wide text-emphasis-low"
-                                                    label
+                                                    attr.``class`` "flex justify-between items-end"
+                                                    span {
+                                                        attr.``class`` "font-bold uppercase text-xs tracking-wider text-emphasis-low"
+                                                        label
+                                                    }
+                                                    
+                                                    match passStructure.headerFields with
+                                                    | Some [first] ->
+                                                        span {
+                                                            attr.``class`` "text-sm text-emphasis-medium self-start leading-none"
+                                                            string first.value 
+                                                        }
+                                                    | _ -> empty ()                                                    
                                                 }
+                                                
                                             | _ -> empty ()
 
                                             h2 {
-                                                attr.``class`` "leading-none text-lg font-light text-emphasis-high"
-
-                                                match first.value with
-                                                | Date dateTimeOffset -> dateTimeOffset.ToString()
-                                                | Number number -> number.ToString()
-                                                | LocalizableString (LocalizableString.LocalizableString value) -> value
+                                                attr.``class`` "leading-none text-lg font-medium text-emphasis-high"
+                                                string first.value 
                                             }
                                         | _ -> empty ()
                                     }
@@ -143,18 +151,14 @@ let homePage (model: HomePageModel) (dispatch: AppMessage Dispatch) =
                                             match first.label with
                                             | Some (LocalizableString.LocalizableString label) ->
                                                 h5 {
-                                                    attr.``class`` "text-xs text-emphasis-low uppercase"
+                                                    attr.``class`` "text-xs tracking-wider text-emphasis-low uppercase"
                                                     label
                                                 }
                                             | _ -> empty ()
 
                                             h4 {
                                                 attr.``class`` "leading-none text-sm font-medium text-emphasis-medium"
-
-                                                match first.value with
-                                                | Date dateTimeOffset -> dateTimeOffset.ToString()
-                                                | Number number -> number.ToString()
-                                                | LocalizableString (LocalizableString.LocalizableString value) -> value
+                                                string first.value 
                                             }
                                         | _ -> empty ()
                                     }

@@ -43,6 +43,11 @@ type FieldValue =
     | LocalizableString of LocalizableString
     | Date of DateTimeOffset
     | Number of int
+    override this.ToString() =
+        match this with
+        | LocalizableString (LocalizableString.LocalizableString localizableString) -> localizableString
+        | Date date -> date.ToString()
+        | Number number -> number.ToString()
 
 type DataDetectorType =
     | PhoneNumber
@@ -273,12 +278,15 @@ let rec private deserializeField
                         reader.GetString()
                         |> LocalizableString.LocalizableString
                         |> FieldValue.LocalizableString
+
                     deserializeField &reader None { state with value = Some value }
             | other -> handleUnexpected &reader other
         | JsonTokenType.Number ->
             match lastPropertyName with
             | Some "value" ->
-                let value = reader.GetInt32() |> FieldValue.Number
+                let value =
+                    reader.GetInt32() |> FieldValue.Number
+
                 deserializeField &reader None { state with value = Some value }
             | other -> handleUnexpected &reader other
         | otherToken ->
@@ -536,4 +544,3 @@ let rec deserializePass
         | otherToken ->
             UnexpectedToken(otherToken, nameof deserializePass)
             |> Error
-
