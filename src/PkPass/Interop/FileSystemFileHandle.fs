@@ -1,8 +1,5 @@
-﻿module FileSystemFileHandle
+﻿namespace PkPass.Interop
 
 open Microsoft.JSInterop
-open Module
-
-type FileSystemFileHandle = FileSystemFileHanddle of IJSInProcessObjectReference
-
+type FileSystemFileHandle = FileSystemFileHandle of IJSInProcessObjectReference
 type File = File of IJSObjectReference

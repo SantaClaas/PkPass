@@ -8,19 +8,20 @@ type CacheStorage = CacheStorage of IJSObjectReference
 type Cache = Cache of IJSObjectReference
 
 // Get this from keys()
-type Iterator = Iterator of IJSObjectReference
-type Array = Array of IJSInProcessObjectReference
+type JsIterator = JsIterator of IJSObjectReference
+
+type JsArray = JsArray of IJSInProcessObjectReference
 
 type Request = Request of IJSObjectReference
 [<RequireQualifiedAccess>]
 type JsObjectReferences =
     | CacheStorage of CacheStorage
     | Cache of CacheStorage
-    | Iterator of Iterator
-    | Array of Array
+    | Iterator of JsIterator
+    | Array of JsArray
     | Request of Request
 // Does not work on (Blazor) server hosting model because of synchronous interop
-type JsEnumerator<'T>(array: Array) =
+type JsEnumerator<'T>(array: JsArray) =
 
 //TODO use values api not keys to reduce it to one interop call
     // Array or Map have the keys() method which returns the iterator with the next() method which is
@@ -28,7 +29,7 @@ type JsEnumerator<'T>(array: Array) =
     // reference to the array or other iterable object and create a new iterator when reset is called
     let mutable currentIterator =
         match array with
-        | Array reference -> reference.Invoke<IJSInProcessObjectReference> "keys"
+        | JsArray reference -> reference.Invoke<IJSInProcessObjectReference> "keys"
 
     let mutable current: 'T option = None
 
@@ -44,7 +45,7 @@ type JsEnumerator<'T>(array: Array) =
             else 
                 current <-
                     match array with
-                    | Array reference ->                        
+                    | JsArray reference ->                        
                         reference.Invoke<'T>("at", value.value) |> Some
                 true
 
@@ -53,21 +54,21 @@ type JsEnumerator<'T>(array: Array) =
         member this.Reset() =
             currentIterator <-
                 match array with
-                | Array reference -> reference.Invoke<IJSInProcessObjectReference> "keys"
+                | JsArray reference -> reference.Invoke<IJSInProcessObjectReference> "keys"
 
             ()
 
     interface IDisposable with
         member this.Dispose() =
             match array with
-            | Array reference -> reference.Dispose()
+            | JsArray reference -> reference.Dispose()
 
     interface IAsyncDisposable with
         member this.DisposeAsync() =
             match array with
-            | Array reference -> reference.DisposeAsync()
+            | JsArray reference -> reference.DisposeAsync()
 
-type JsEnumerable<'T>(array: Array) =
+type JsEnumerable<'T>(array: JsArray) =
     interface IEnumerable<'T option> with
         member this.GetEnumerator() : IEnumerator<'T option> =
             new JsEnumerator<'T>(array) :> IEnumerator<'T option>
@@ -78,7 +79,7 @@ type JsEnumerable<'T>(array: Array) =
 
 module JsConsole =
     let log (reference : IJSObjectReference) (jsRuntime: IJSRuntime) =
-        jsRuntime.InvokeVoidAsync("console.log","Log from F# ", reference)
+        jsRuntime.InvokeVoidAsync("console.log", reference)
 
 
 module CacheStorage =
@@ -96,7 +97,7 @@ module CacheStorage =
 
                 return
                     cachesArray
-                    |> Array
+                    |> JsArray
                     |> JsEnumerable<IJSObjectReference>
                     |> Seq.choose id
                     |> Seq.map Cache
@@ -111,7 +112,7 @@ module Cache =
                 let! requestsArray = reference.InvokeAsync<IJSInProcessObjectReference>("keys")
                 return
                     requestsArray
-                    |> Array
+                    |> JsArray
                     |> JsEnumerable<IJSObjectReference>
                     |> Seq.choose id
                     |> Seq.map Request

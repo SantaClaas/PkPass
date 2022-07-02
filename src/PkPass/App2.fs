@@ -7,9 +7,11 @@ open System.Text.Json
 open System.Threading.Tasks
 open Bolero
 open Bolero.Html
+open Components
 open Microsoft.AspNetCore.Components
 open Microsoft.JSInterop
 open PkPass.Interop
+open PkPass.Interop.Window
 open PkPass.PassKit.Deserialization
 open PkPass.PassKit.Package
 
@@ -36,6 +38,8 @@ type HomePageMessage = SetPassLoadResult of Result<PassPackage, LoadPassError> a
 type AppMessage =
     | SetPage of page: AppPage
     | HomePageMessage of HomePageMessage
+    | RequestFileFromUser
+    | AddUserSelectedFiles of FileSystemFileHandle array
     | LogError of AppError
 
 type AppModel = { activePage: AppPage }
@@ -52,10 +56,27 @@ let updateHomePage (message: HomePageMessage) (model: AppModel) =
         |> SetPage
         |> Cmd.ofMsg
 
-let update (message: AppMessage) (model: AppModel) =
+let update (message: AppMessage) (model: AppModel) (jsRuntime: IJSRuntime) =
     match message with
     | SetPage page -> { activePage = page }, Cmd.none
     | HomePageMessage homePageMessage -> updateHomePage homePageMessage model
+    | RequestFileFromUser ->
+        let requestFile () =
+            let acceptedFileTypes =
+                Map.ofList [ ("application/vnd.apple.pkpass", [| ".pkpass" |])
+                             ("application/vnd.apple.pkpasses", [| ".pkpasses" |]) ]
+
+            let options  =
+                { types =
+                    [| {| description = "Pass files"
+                          accept = acceptedFileTypes |} |] }
+
+            showOpenFilePicker options jsRuntime
+
+        model, Cmd.OfTask.either requestFile () AddUserSelectedFiles (UnknownError >> LogError)
+    | AddUserSelectedFiles fileHandles ->
+        fileHandles |> Array.length |> printfn "Loaded %O files"
+        model, Cmd.none
     | LogError appError ->
         match appError with
         | LoadPassError passError ->
@@ -121,26 +142,29 @@ let homePage (model: HomePageModel) (dispatch: AppMessage Dispatch) =
                                             match first.label with
                                             | Some (LocalizableString.LocalizableString label) ->
                                                 h3 {
-                                                    attr.``class`` "flex justify-between items-end"
+                                                    attr.``class`` "flex justify-between items-end mb-1"
+
                                                     span {
-                                                        attr.``class`` "font-bold uppercase text-xs tracking-wider text-emphasis-low"
+                                                        attr.``class``
+                                                            "font-bold uppercase text-xs tracking-wider text-emphasis-low"
+
                                                         label
                                                     }
-                                                    
+
                                                     match passStructure.headerFields with
-                                                    | Some [first] ->
+                                                    | Some [ first ] ->
                                                         span {
-                                                            attr.``class`` "text-sm text-emphasis-medium self-start leading-none"
-                                                            string first.value 
+                                                            attr.``class`` "text-sm text-emphasis-medium leading-none"
+                                                            string first.value
                                                         }
-                                                    | _ -> empty ()                                                    
+                                                    | _ -> empty ()
                                                 }
-                                                
+
                                             | _ -> empty ()
 
                                             h2 {
                                                 attr.``class`` "leading-none text-lg font-medium text-emphasis-high"
-                                                string first.value 
+                                                string first.value
                                             }
                                         | _ -> empty ()
                                     }
@@ -158,7 +182,7 @@ let homePage (model: HomePageModel) (dispatch: AppMessage Dispatch) =
 
                                             h4 {
                                                 attr.``class`` "leading-none text-sm font-medium text-emphasis-medium"
-                                                string first.value 
+                                                string first.value
                                             }
                                         | _ -> empty ()
                                     }
@@ -166,6 +190,8 @@ let homePage (model: HomePageModel) (dispatch: AppMessage Dispatch) =
                             }
                         | _ -> div { "Sorry this pass type is not supported yet" })
             }
+
+            comp<FloatingActionButton> { on.click (fun _ -> dispatch RequestFileFromUser) }
         }
 
 let view (model: AppModel) (dispatch: AppMessage Dispatch) =
@@ -278,6 +304,8 @@ let createProgram (jsRuntime: IJSRuntime) (httpClient: HttpClient) =
     // And then sets the loading state to complete
     let initialize _ =
         { activePage = AppPage.Home LoadingPasses }, createInitialLoadCommand jsRuntime httpClient
+
+    let update model dispatch = update model dispatch jsRuntime
 
     Program.mkProgram initialize update view
     |> Program.withRouter router

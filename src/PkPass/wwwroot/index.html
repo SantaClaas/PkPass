@@ -21,6 +21,13 @@
 
     <!-- Tailwind CSS play CDN: TODO use proper build -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <style type="text/tailwindcss">
+        @layer base {
+            body {
+                -webkit-tap-highlight-color: transparent;
+            }
+        }
+    </style>
     <script>
         //const defaultTheme = require('tailwindcss/defaultTheme')
 
@@ -161,8 +168,7 @@
             }
         }
     </script>
-    <style type="text/tailwindcss">
-    </style>
+  
 </head>
 <body>
 <div id="main">Loading...</div>
