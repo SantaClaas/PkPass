@@ -11,7 +11,6 @@ open Microsoft.AspNetCore.Components
 open Microsoft.JSInterop
 open PkPass.HomePage
 open PkPass.Interop
-open PkPass.Interop.Window
 open PkPass.PassKit.Deserialization
 open PkPass.PassKit.Package
 
@@ -63,7 +62,7 @@ module App =
 
 
     // We call "model" "state" and use it to determine page
-    // Always set home page for now
+    // Always set to home page for now
     let router: Router<AppState, AppState, AppMessage> =
         { getEndPoint = fun model -> model
           setRoute =
@@ -75,21 +74,10 @@ module App =
 
         }
 
-    //    type AppRouter () =
-//        interface Bolero.IRouter<string,int> with
-//
-//    let router1 = AppRouter ()
-//
     let view (state: AppState) (dispatch: AppMessage Dispatch) =
         match state with
         | HomePageState homePageState ->
             HomePage.view homePageState (fun message -> AppMessage.HomePageMessage message |> dispatch)
-    //        match state.activePage with
-//        | Home _ ->
-//            Console.WriteLine $"Rendering app with model {state.GetType()}"
-//            HomePage.view state.homePageModel (fun message -> AppMessage.HomePageMessage message |> dispatch)
-////            homePage model dispatch
-
 
     // Load passes
     // 1. Load cache urls
