@@ -120,6 +120,29 @@ module HomePage =
 
     let private createPngDataUrl base64String = $"data:image/png;base64,{base64String}"
 
+    let private renderPrimaryField (field: Field) (headerFields) =
+        cond field.label (fun label ->
+            match label with
+            | Some (LocalizableString.LocalizableString label) ->
+                h3 {
+                    attr.``class`` "flex justify-between items-end mb-1"
+
+                    span {
+                        attr.``class`` "font-bold uppercase text-xs tracking-wider text-emphasis-low"
+
+                        label
+                    }
+
+                    match headerFields with
+                    | Some [ first ] ->
+                        span {
+                            attr.``class`` "text-sm text-emphasis-medium leading-none"
+                            string first.value
+                        }
+                    | _ -> empty ()
+                }
+            | _ -> empty ())
+
     let private passesPreviewList loadResults dispatch =
 
         ul {
@@ -143,54 +166,47 @@ module HomePage =
                                 attr.``class`` "flex flex-col justify-between"
 
                                 div {
-                                    match passStructure.primaryFields with
-                                    | Some [ first ] ->
-                                        match first.label with
-                                        | Some (LocalizableString.LocalizableString label) ->
-                                            h3 {
-                                                attr.``class`` "flex justify-between items-end mb-1"
+                                    cond passStructure.primaryFields (fun fields ->
+                                        match passStructure.primaryFields with
+                                        | Some [ first ] ->
+                                            concat {
+                                                renderPrimaryField first passStructure.headerFields
 
-                                                span {
-                                                    attr.``class``
-                                                        "font-bold uppercase text-xs tracking-wider text-emphasis-low"
-
-                                                    label
+                                                h2 {
+                                                    attr.``class`` "leading-none text-lg font-medium text-emphasis-high"
+                                                    string first.value
                                                 }
-
-                                                match passStructure.headerFields with
-                                                | Some [ first ] ->
-                                                    span {
-                                                        attr.``class`` "text-sm text-emphasis-medium leading-none"
-                                                        string first.value
-                                                    }
-                                                | _ -> empty ()
                                             }
 
-                                        | _ -> empty ()
-
-                                        h2 {
-                                            attr.``class`` "leading-none text-lg font-medium text-emphasis-high"
-                                            string first.value
-                                        }
-                                    | _ -> empty ()
+                                        | _ -> empty ())
                                 }
 
                                 div {
-                                    match passStructure.secondaryFields with
-                                    | Some [ first ] ->
-                                        match first.label with
-                                        | Some (LocalizableString.LocalizableString label) ->
-                                            h5 {
-                                                attr.``class`` "text-xs tracking-wider text-emphasis-low uppercase"
-                                                label
-                                            }
-                                        | _ -> empty ()
+                                    cond passStructure.secondaryFields (fun fields ->
+                                        match fields with
+                                        | Some [ first ] ->
+                                            concat {
+                                                cond first.label (fun label ->
+                                                    match label with
+                                                    | Some (LocalizableString.LocalizableString label) ->
+                                                        h5 {
+                                                            attr.``class``
+                                                                "text-xs tracking-wider text-emphasis-low uppercase"
 
-                                        h4 {
-                                            attr.``class`` "leading-none text-sm font-medium text-emphasis-medium"
-                                            string first.value
-                                        }
-                                    | _ -> empty ()
+                                                            label
+                                                        }
+                                                    | _ -> empty ())
+
+                                                h4 {
+                                                    attr.``class``
+                                                        "leading-none text-sm font-medium text-emphasis-medium"
+
+                                                    string first.value
+                                                }
+                                            }
+
+                                        | _ -> empty ())
+
                                 }
                             }
                         }
@@ -201,8 +217,7 @@ module HomePage =
         match model with
         | LoadingPasses -> main { "Loading passes..." }
         | PassesLoaded loadResults ->
-            main {
-                attr.``class`` "p-4"
+            concat {
 
                 h1 {
                     attr.``class`` "text-xl font-lighter mb-2 tracking-widest"
@@ -211,5 +226,5 @@ module HomePage =
 
                 passesPreviewList loadResults dispatch
 
-                ecomp<AddPassFloatingActionButton, _, _> () (fun files -> ()){ attr.empty() }
+                ecomp<AddPassFloatingActionButton, _, _> () (fun files -> ()) { attr.empty () }
             }
