@@ -143,74 +143,80 @@ module HomePage =
                 }
             | _ -> empty ())
 
+    let private renderPassThumbnail thumbnail =
+        match thumbnail with
+            | PassThumbnail (Image.Base64 base64String) ->
+                img {
+                    attr.``class`` "w-20 rounded-lg"
+                    base64String |> createPngDataUrl |> attr.src
+                }
+                
+    let private renderEventTicket passDefinition passStructure passPackage =
+         div {
+                attr.``class`` "bg-white/5 flex gap-3 p-3 rounded-xl justify-between"
+                
+                renderPassThumbnail passPackage.thumbnail
+
+                div {
+                    attr.``class`` "flex flex-col justify-between"
+
+                    div {
+                        cond passStructure.primaryFields (fun fields ->
+                            match passStructure.primaryFields with
+                            | Some [ first ] ->
+                                concat {
+                                    renderPrimaryField first passStructure.headerFields
+
+                                    h2 {
+                                        attr.``class`` "leading-none text-lg font-medium text-emphasis-high"
+                                        string first.value
+                                    }
+                                }
+
+                            | _ -> empty ())
+                    }
+
+                    div {
+                        cond passStructure.secondaryFields (fun fields ->
+                            match fields with
+                            | Some [ first ] ->
+                                concat {
+                                    cond first.label (fun label ->
+                                        match label with
+                                        | Some (LocalizableString.LocalizableString label) ->
+                                            h5 {
+                                                attr.``class`` "text-xs tracking-wider text-emphasis-low uppercase"
+
+                                                label
+                                            }
+                                        | _ -> empty ())
+
+                                    h4 {
+                                        attr.``class`` "leading-none text-sm font-medium text-emphasis-medium"
+
+                                        string first.value
+                                    }
+                                }
+                            | _ -> empty ())
+                    }
+                }
+            }
+    let private renderPassPackage passPackage =
+        cond passPackage.pass (fun pass ->
+            match pass with
+            | EventTicket (passDefinition, passStructure) ->
+                renderEventTicket passDefinition passStructure passPackage
+            | _ -> div { "Sorry this pass type is not supported yet" })
+
     let private passesPreviewList loadResults dispatch =
 
         ul {
             forEach loadResults (fun result ->
-                match result with
-                | Error loadPassError -> p { "Sorry could not load that pass" }
-                | Ok passPackage ->
-                    match passPackage.pass with
-                    | EventTicket (passDefinition, passStructure) ->
-                        div {
-                            attr.``class`` "bg-white/5 flex gap-3 p-3 rounded-xl justify-between"
+                cond result (fun result ->
+                    match result with
+                    | Error loadPassError -> p { "Sorry could not load that pass" }
+                    | Ok passPackage -> renderPassPackage passPackage))
 
-                            match passPackage.thumbnail with
-                            | PassThumbnail (Image.Base64 base64String) ->
-                                img {
-                                    attr.``class`` "w-20 rounded-lg"
-                                    base64String |> createPngDataUrl |> attr.src
-                                }
-
-                            div {
-                                attr.``class`` "flex flex-col justify-between"
-
-                                div {
-                                    cond passStructure.primaryFields (fun fields ->
-                                        match passStructure.primaryFields with
-                                        | Some [ first ] ->
-                                            concat {
-                                                renderPrimaryField first passStructure.headerFields
-
-                                                h2 {
-                                                    attr.``class`` "leading-none text-lg font-medium text-emphasis-high"
-                                                    string first.value
-                                                }
-                                            }
-
-                                        | _ -> empty ())
-                                }
-
-                                div {
-                                    cond passStructure.secondaryFields (fun fields ->
-                                        match fields with
-                                        | Some [ first ] ->
-                                            concat {
-                                                cond first.label (fun label ->
-                                                    match label with
-                                                    | Some (LocalizableString.LocalizableString label) ->
-                                                        h5 {
-                                                            attr.``class``
-                                                                "text-xs tracking-wider text-emphasis-low uppercase"
-
-                                                            label
-                                                        }
-                                                    | _ -> empty ())
-
-                                                h4 {
-                                                    attr.``class``
-                                                        "leading-none text-sm font-medium text-emphasis-medium"
-
-                                                    string first.value
-                                                }
-                                            }
-
-                                        | _ -> empty ())
-
-                                }
-                            }
-                        }
-                    | _ -> div { "Sorry this pass type is not supported yet" })
         }
 
     let view (model: HomePageState) (dispatch: HomePageMessage Dispatch) =
