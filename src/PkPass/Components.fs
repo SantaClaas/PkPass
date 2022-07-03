@@ -240,6 +240,7 @@ type AddPassFloatingActionButton() =
 
             input {
                 ``type`` "file"
+                style "visibility: hidden;"
                 accept (String.Join(',', pkPassMimeType, pkPassesMimeType, pkPassFileExtension, pkPassesFileExtension))
                 fallBackInputReference
             }
