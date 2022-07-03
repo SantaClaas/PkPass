@@ -36,13 +36,10 @@ module App =
         | HomePageState homePageState ->
             match message with
             | HomePageMessage homePageMessage ->
-                Console.WriteLine $"Received home message {homePageMessage.GetType()}"
-
                 let newHomePageModel, command =
                     HomePage.update homePageMessage homePageState jsRuntime
 
                 let newCommand = command |> Cmd.map AppMessage.HomePageMessage
-                Console.WriteLine $"New home page model is {newHomePageModel.GetType()}"
                 newHomePageModel |> AppState.HomePageState, newCommand
 
             | LogError appError ->

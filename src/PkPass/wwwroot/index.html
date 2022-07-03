@@ -168,47 +168,11 @@
             }
         }
     </script>
-  
+
 </head>
 <body>
 <div id="main">Loading...</div>
-<script>
-    if ('launchQueue' in window && 'files' in LaunchParams.prototype) {
-        console.info("File Handling API is supported! 🥳🎉");
-        /* 
-         * This will receive files through the OS file handler registration. 
-         * Share target file sharing is received by service worker 
-         */
-        launchQueue.setConsumer((launchParameters) => {
-            // Nothing to do when the queue is empty
-            if (!launchParameters.files.length) {
-                console.info("File handling queue is empty. Don't need to handle files")
-
-                return;
-            }
-
-            for (const fileHandle of launchParameters.files) {
-                console.info("Received file!", fileHandle);
-                // Save all loaded files to cache for app to pick up from when fully loaded 
-                fileHandle.getFile()
-                    .then(file => {
-                        // Can use the same as this handler because the HTTP Verb is different (GET not POST)
-                        const path = `/files/${file.name}`;
-                        const request = new Request(path, {method: "GET"});
-                        const response = new Response(file, {status: 200, statusText: "OK"});
-                        //TODO inform app to open newly added files
-                        caches.open("files")
-                            .then(cache => cache.put(request, response))
-                            .then(() => window.open("/open/" + file.name, "_self"))
-                            .catch(console.error);
-                    });
-            }
-        })
-
-    } else {
-        console.info("Fle Handling API is not supported 😔. Maybe it is only in canary or dev chromium browser versions yet?");
-    }
-</script>
+<script src="fileHandling.js"></script>
 <script src="_framework/blazor.webassembly.modified.js"></script>
 <script>navigator.serviceWorker.register('service-worker.js');</script>
 
