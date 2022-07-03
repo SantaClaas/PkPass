@@ -1,20 +1,18 @@
 ﻿namespace PkPass
 
 open System
+open System.Net.Http
 open Bolero.Html
 open Components
 open Elmish
 open Microsoft.JSInterop
 open PkPass.Interop
 open PkPass.Interop.Window
+open PkPass.LoadPass
 open PkPass.PassKit.Deserialization
 open PkPass.PassKit.Package
 
 // Describes all the errors that can occur when loading a pass
-type LoadPassError =
-    | LoadCacheUrlError
-    | LoadPassDataFromCacheError of Exception
-    | DeserializationError of DeserializationError
 
 module HomePage =
     // Home page can be displaying loaded passes or it is currently loading passes
@@ -39,11 +37,12 @@ module HomePage =
 
 
 
-    let update (message: HomePageMessage) (model: HomePageState) (jsRuntime: IJSRuntime) =
+    let update (message: HomePageMessage) (model: HomePageState) (jsRuntime: IJSRuntime) (httpClient: HttpClient) =
         match message with
         | LoadPasses ->
-            Console.WriteLine "Uhm. This is awkward"
-            model, Cmd.none
+            let loadAndSet () = completelyLoadPasses jsRuntime httpClient
+            let command = Cmd.OfTask.either loadAndSet () HomePageMessage.SetPassLoadResult (UnknownError >> LogError)
+            model, command
         | SetPassLoadResult results -> HomePageState.PassesLoaded results, Cmd.none
         | RequestFileFromUser ->
             let requestFile () =
@@ -232,5 +231,7 @@ module HomePage =
 
                 passesPreviewList loadResults dispatch
 
-                ecomp<AddPassFloatingActionButton, _, _> () (fun files -> ()) { attr.empty () }
+                // Button click has big side effect of requesting files from user and loading them into cache where
+                // we need to pick them up
+                ecomp<AddPassFloatingActionButton, _, _> () (fun _ -> dispatch HomePageMessage.LoadPasses) { attr.empty () }
             }

@@ -1,7 +1,5 @@
 ﻿module PkPass.Interop.Window
 
-open System
-open System.Text.Json
 open System.Threading.Tasks
 open Microsoft.JSInterop
 

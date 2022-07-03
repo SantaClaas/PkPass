@@ -1,6 +1,5 @@
 ﻿namespace PkPass.Interop
 
-open Bolero.Html.on
 open Microsoft.JSInterop
 
 type FileSystemFileHandle = FileSystemFileHandle of IJSInProcessObjectReference

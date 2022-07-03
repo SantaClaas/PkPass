@@ -28,6 +28,7 @@
         <Compile Include="Interop\Window.fs" />
         <Compile Include="Interop\Element.fs" />
         <Compile Include="Interop\Document.fs" />
+        <Compile Include="LoadPass.fs" />
         <Compile Include="Components.fs" />
         <Compile Include="HomePage.fs" />
         <Compile Include="App.fs" />

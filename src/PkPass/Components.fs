@@ -7,8 +7,6 @@ open Bolero.Html.attr
 open System.Collections.Generic
 open Microsoft.AspNetCore.Components
 open Microsoft.JSInterop
-open PkPass.Interop
-open PkPass.Interop.Window
 
 type ContainedButtonModel = { label: string; icon: Node option }
 

@@ -7,7 +7,6 @@ open System.Net
 open System.Net.Http
 open System.Text.Json
 open Microsoft.FSharp.Core
-open PkPass.PassKit
 open PkPass.PassKit.Deserialization
 
 //TODO make package hold the zip archive instead of the location to avoid opening it for every operation

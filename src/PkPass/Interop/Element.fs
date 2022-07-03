@@ -1,7 +1,6 @@
 ﻿namespace PkPass.Interop
 
 open Microsoft.JSInterop
-open PkPass.Interop
 
 type Element = Element of IJSObjectReference
 
