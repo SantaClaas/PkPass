@@ -1,4 +1,6 @@
 ﻿const cacheFiles = async fileHandles => {
+    if(fileHandles.length === 0) return;
+    
     const cacheOpenPromise = caches.open("files");
     const getFilesPromises = fileHandles.map(handle => handle.getFile());
     const files = await Promise.all(getFilesPromises);
@@ -36,9 +38,16 @@ if ('launchQueue' in window && 'files' in LaunchParams.prototype) {
 }
 
 const getFilesUsingInput = input =>
-    new Promise((resolve) => {
+    new Promise((resolve, reject) => {
+        // Generous timeout of an hour
+        const timeOutInMilliseconds = 1000 * 60 * 60;
+        const timeoutId = setTimeout(() => {
+            reject("Timed out waiting for event to notify files have changed");
+        }, timeOutInMilliseconds);
+
         const handleChange = (event) => {
             input.removeEventListener("change", handleChange);
+            clearTimeout(timeoutId);
             resolve(event.target.files);
         }
 
@@ -68,6 +77,10 @@ const getFilesFromUser = async fallBackInput => {
 async function getAndCacheFilesFromUser(fallBackInput) {
 // const getAndCacheFilesFromUser = async fallBackInput => {
     const files = await getFilesFromUser(fallBackInput);
+    if (files.length === 0) {
+        console.info("User selected no files.");
+        return;
+    }
     await cacheFiles(files);
 }
 
