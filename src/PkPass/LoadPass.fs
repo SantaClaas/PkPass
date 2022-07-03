@@ -14,7 +14,7 @@ type LoadPassError =
     | LoadCacheUrlError
     | LoadPassDataFromCacheError of Exception
     | DeserializationError of DeserializationError
-    
+
 // Load passes
 // 1. Load cache urls
 // Inefficient way to get a property from a JS object reference
@@ -41,13 +41,26 @@ let private loadCacheUrls jsRuntime =
         return urls |> Array.map (fun request -> request.url)
     }
 
+let guessFileNameFromUri (uri: Uri) = uri.Segments |> Array.last
+
+let private getFileName (response: HttpResponseMessage) =
+    response.Content.Headers.ContentDisposition
+    |> Option.ofObj
+    |> Option.map (fun header -> header.FileName)
+    // Else guess from last segment
+    |> Option.defaultWith (fun _ ->
+        response.RequestMessage.RequestUri
+        |> guessFileNameFromUri)
 // 2. Load passes from urls
 let private loadPassDataFromCacheUrl (client: HttpClient) (url: string) =
     task {
         try
+            use! response = client.GetAsync url
+            let fileName = getFileName response
+            // Pass name for now is saved in
             let! stream = client.GetStreamAsync url
             let archive = new ZipArchive(stream)
-            return archive |> AsZip |> Ok
+            return (archive, fileName) |> AsZip |> Ok
         with
         | exception' -> return LoadPassDataFromCacheError exception' |> Error
     }
@@ -68,7 +81,11 @@ let private loadPass (package: PassPackageData) : Result<PassPackage, Deserializ
     match pass with
     | Error error -> Error error
     | Ok pass ->
-        { pass = pass
+        let (PassPackageData.AsZip (_, name)) =
+            package
+
+        { fileName = name
+          pass = pass
           background = getBackground package
           thumbnail = getThumbnail package
           logo = getLogo package }

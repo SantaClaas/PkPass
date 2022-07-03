@@ -41,4 +41,7 @@ module Cache =
                     |> Seq.choose id
                     |> Seq.map Request
             }
-            
+    
+    let delete (request: string) (Cache reference) =
+        reference.InvokeAsync<bool>("delete", request)
+        

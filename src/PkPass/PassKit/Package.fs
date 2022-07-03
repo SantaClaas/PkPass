@@ -13,11 +13,8 @@ open PkPass.PassKit.Deserialization
 // Describes in what state the raw data of a package can be in.
 // These are dumb and do not know what the pass includes or if it is even valid
 type PassPackageData =
-    | Compressed of location: string
-    | Extracted of location: string
-    | InMemory of data: byte array
-    | AsZip of ZipArchive
-
+    | AsZip of ZipArchive * fileName : string
+    
 
 //TODO support loading from url or other sources. Might add additional dataUrl type to shift responsibility of knowing file type from consumer to producer
 type Image = Base64 of string
@@ -27,7 +24,8 @@ type PassThumbnail = PassThumbnail of Image
 
 // Pass package is the loaded contents of a zip pass archive folder
 type PassPackage =
-    { pass: Pass
+    { fileName: string
+      pass: Pass
       background: PassBackground
       logo: PassLogo
       thumbnail: PassThumbnail }
@@ -41,14 +39,7 @@ let private getFileFromPackage fileName (package: PassPackageData) =
         memoryStream.ToArray()
 
     match package with
-    | Compressed location ->
-        use zip = ZipFile.OpenRead location
-        extractFromArchive zip fileName
-    | Extracted location ->
-        let path = Path.Combine(location, fileName)
-        File.ReadAllBytes path
-    | InMemory data -> data
-    | AsZip zipArchive -> extractFromArchive zipArchive fileName
+    | AsZip (zipArchive, _) -> extractFromArchive zipArchive fileName
 
 let getPass (package: PassPackageData) =
     let data =
@@ -86,21 +77,3 @@ type LoadPackageError =
 type AppError =
     | DeserializationError of DeserializationError
     | LoadPackageError of Exception
-
-let loadFromCache (fileName: string) (client: HttpClient) =
-    task {
-        // Assume service worker loads this from cache
-        use! result = client.GetAsync("/files/" + fileName)
-
-        if result.IsSuccessStatusCode then
-            use! stream = result.Content.ReadAsStreamAsync()
-
-            use fileStream =
-                File.Open(Path.GetRandomFileName(), FileMode.OpenOrCreate)
-
-            do! stream.CopyToAsync fileStream
-            let archive = new ZipArchive(fileStream)
-            return archive |> AsZip |> Ok
-        else
-            return UnsuccessfulResponse result.StatusCode |> Error
-    }
