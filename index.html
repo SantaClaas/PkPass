@@ -88,78 +88,78 @@
                         },
                         // https://material.io/design/color/the-color-system.html#tools-for-picking-colors with FA52FA
                         primary: {
-                            50: "#ffe5fe",
-                            100: "#fdbefc",
-                            200: "#fc8efb",
-                            300: "#fa52fa",
-                            400: "#f600f8",
-                            500: "#ea00ed",
-                            600: "#d800e9",
-                            700: "#c000e3",
-                            800: "#aa00de",
-                            900: "#8100d4",
+                            50: "#f9e5ea",
+                            100: "#f2becb",
+                            200: "#e996aa",
+                            300: "#e0708a",
+                            400: "#d85973",
+                            500: "#d1495e",
+                            600: "#c1445b",
+                            700: "#ab3f56",
+                            800: "#963a51",
+                            900: "#703246",
                         },
                         complementary: {
-                            50: "#ecffe9",
-                            100: "#cfffc8",
-                            200: "#acffa3",
-                            300: "#81fd78",
-                            400: "#52fa52",
-                            500: "#00f721",
-                            600: "#00e417",
-                            700: "#00ce03",
-                            800: "#00b900",
-                            900: "#009400",
+                            50: "#e0f4f1",
+                            100: "#b1e4da",
+                            200: "#7ed3c3",
+                            300: "#44c1aa",
+                            400: "#00b398",
+                            500: "#00a386",
+                            600: "#009679",
+                            700: "#008569",
+                            800: "#00755b",
+                            900: "#00583f",
                         },
                         analogous: {
                             1: {
-                                50: "#f4e8fe",
-                                100: "#e0c7fd",
-                                200: "#cca1fc",
-                                300: "#b876fc",
-                                400: "#a652fa",
-                                500: "#9426f7",
-                                600: "#891ff0",
-                                700: "#7911e7",
-                                800: "#6b00e2",
-                                900: "#5400d3",
+                                50: "#f7e5f0",
+                                100: "#ebbeda",
+                                200: "#de92c3",
+                                300: "#ce66ab",
+                                400: "#c14499",
+                                500: "#b3218a",
+                                600: "#a71b85",
+                                700: "#96127e",
+                                800: "#870c77",
+                                900: "#6d006b",
                             },
                             2: {
-                                50: "#fde3f0",
-                                100: "#fab8da",
-                                200: "#f989c0",
-                                300: "#fa52a6",
-                                400: "#fb0c8f",
-                                500: "#f90077",
-                                600: "#e70074",
-                                700: "#d0006e",
-                                800: "#ba006a",
-                                900: "#910062",
+                                50: "#fcf3e6",
+                                100: "#f7e1c1",
+                                200: "#f3ce9a",
+                                300: "#efbb76",
+                                400: "#ecad61",
+                                500: "#e7a157",
+                                600: "#e29752",
+                                700: "#da8a4c",
+                                800: "#d17d48",
+                                900: "#c16c44",
                             }
                         },
                         triadic: {
                             1: {
-                                50: "#ffebef",
-                                100: "#ffced4",
-                                200: "#f69b9c",
-                                300: "#ee7475",
-                                400: "#fa5252",
-                                500: "#ff3f36",
-                                600: "#f13636",
-                                700: "#df2b30",
-                                800: "#d22229",
-                                900: "#c3141d",
+                                50: "#fdf9e8",
+                                100: "#f8f0c6",
+                                200: "#f4e7a1",
+                                300: "#eede7f",
+                                400: "#e9d766",
+                                500: "#e5d050",
+                                600: "#d5bf4b",
+                                700: "#c1aa44",
+                                800: "#ac943f",
+                                900: "#897037",
                             }, 2: {
-                                50: "#feffe7",
-                                100: "#fbfcc3",
-                                200: "#f8f999",
-                                300: "#f4f56e",
-                                400: "#fafa52",
-                                500: "#f6f529",
-                                600: "#fae523",
-                                700: "#fbcc11",
-                                800: "#fcb300",
-                                900: "#fb8900",
+                                50: "#eefaea",
+                                100: "#d5f2ca",
+                                200: "#b8eaa8",
+                                300: "#9be085",
+                                400: "#82d968",
+                                500: "#6ad24c",
+                                600: "#5bc144",
+                                700: "#45ac3a",
+                                800: "#2e9830",
+                                900: "#00751c",
                             }
                         }
                     },
@@ -168,48 +168,12 @@
             }
         }
     </script>
-  
+
 </head>
 <body>
 <div id="main">Loading...</div>
-<script>
-    if ('launchQueue' in window && 'files' in LaunchParams.prototype) {
-        console.info("File Handling API is supported! 🥳🎉");
-        /* 
-         * This will receive files through the OS file handler registration. 
-         * Share target file sharing is received by service worker 
-         */
-        launchQueue.setConsumer((launchParameters) => {
-            // Nothing to do when the queue is empty
-            if (!launchParameters.files.length) {
-                console.info("File handling queue is empty. Don't need to handle files")
-
-                return;
-            }
-
-            for (const fileHandle of launchParameters.files) {
-                console.info("Received file!", fileHandle);
-                // Save all loaded files to cache for app to pick up from when fully loaded 
-                fileHandle.getFile()
-                    .then(file => {
-                        // Can use the same as this handler because the HTTP Verb is different (GET not POST)
-                        const path = `/files/${file.name}`;
-                        const request = new Request(path, {method: "GET"});
-                        const response = new Response(file, {status: 200, statusText: "OK"});
-                        //TODO inform app to open newly added files
-                        caches.open("files")
-                            .then(cache => cache.put(request, response))
-                            .then(() => window.open("/open/" + file.name, "_self"))
-                            .catch(console.error);
-                    });
-            }
-        })
-
-    } else {
-        console.info("Fle Handling API is not supported 😔. Maybe it is only in canary or dev chromium browser versions yet?");
-    }
-</script>
-<script src="_framework/blazor.webassembly.js"></script>
+<script src="fileHandling.js"></script>
+<script src="_framework/blazor.webassembly.modified.js"></script>
 <script>navigator.serviceWorker.register('service-worker.js');</script>
 
 </body>
