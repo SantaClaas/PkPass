@@ -18,13 +18,13 @@ type LoadPassError =
 // Load passes
 // 1. Load cache urls
 // Inefficient way to get a property from a JS object reference
-let getProperty<'T> (reference: IJSObjectReference) (properties: string array) (jsRuntime: IJSRuntime) =
+let private getProperty<'T> (reference: IJSObjectReference) (properties: string array) (jsRuntime: IJSRuntime) =
     task {
         let! asString = jsRuntime.InvokeAsync<string>("JSON.stringify", reference, properties)
         return JsonSerializer.Deserialize<'T>(asString)
     }
 
-let loadCacheUrls jsRuntime =
+let private loadCacheUrls jsRuntime =
     task {
         let! cache = jsRuntime |> CacheStorage.open' "files"
 
@@ -42,7 +42,7 @@ let loadCacheUrls jsRuntime =
     }
 
 // 2. Load passes from urls
-let loadPassDataFromCacheUrl (client: HttpClient) (url: string) =
+let private loadPassDataFromCacheUrl (client: HttpClient) (url: string) =
     task {
         try
             let! stream = client.GetStreamAsync url
@@ -52,7 +52,7 @@ let loadPassDataFromCacheUrl (client: HttpClient) (url: string) =
         | exception' -> return LoadPassDataFromCacheError exception' |> Error
     }
 
-let loadPassesDataFromCacheUrls (client: HttpClient) (urls: string array) =
+let private loadPassesDataFromCacheUrls (client: HttpClient) (urls: string array) =
     task {
         let tasks =
             Array.map (loadPassDataFromCacheUrl client) urls
@@ -62,7 +62,7 @@ let loadPassesDataFromCacheUrls (client: HttpClient) (urls: string array) =
 
 // 3. Parse passes
 // We load all the data of the passes at once (for now) instead of a more complex lazy approach that can be implemented later
-let loadPass (package: PassPackageData) : Result<PassPackage, DeserializationError> =
+let private loadPass (package: PassPackageData) : Result<PassPackage, DeserializationError> =
     let pass = getPass package
 
     match pass with
@@ -74,7 +74,7 @@ let loadPass (package: PassPackageData) : Result<PassPackage, DeserializationErr
           logo = getLogo package }
         |> Ok
 
-let loadPasses = Array.map loadPass
+let private loadPasses = Array.map loadPass
 
 let completelyLoadPasses jsRuntime client =
     task {
