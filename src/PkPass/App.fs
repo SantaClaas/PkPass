@@ -6,6 +6,8 @@ open System.Net.Http
 open System.Text.Json
 open System.Threading.Tasks
 open Bolero
+open Bolero.Html
+open Components
 open Elmish
 open Microsoft.AspNetCore.Components
 open Microsoft.JSInterop
@@ -37,9 +39,11 @@ module App =
             match message with
             | HomePageMessage homePageMessage ->
                 let newHomePageModel, command =
-                    HomePage.update homePageMessage homePageState jsRuntime
+                    update homePageMessage homePageState jsRuntime
 
-                let newCommand = command |> Cmd.map AppMessage.HomePageMessage
+                let newCommand =
+                    command |> Cmd.map AppMessage.HomePageMessage
+
                 newHomePageModel |> AppState.HomePageState, newCommand
 
             | LogError appError ->
@@ -72,9 +76,16 @@ module App =
         }
 
     let view (state: AppState) (dispatch: AppMessage Dispatch) =
-        match state with
-        | HomePageState homePageState ->
-            HomePage.view homePageState (fun message -> AppMessage.HomePageMessage message |> dispatch)
+        main {
+            attr.``class`` "p-4"
+
+            cond state (fun state ->
+                match state with
+                | HomePageState homePageState ->
+                    view homePageState (fun message -> AppMessage.HomePageMessage message |> dispatch))
+
+            comp<VersionInformation> { attr.empty () }
+        }
 
     // Load passes
     // 1. Load cache urls
@@ -95,7 +106,8 @@ module App =
                 match request with
                 | Request reference -> getProperty<{| url: string |}> reference [| "url" |] jsRuntime
 
-            let getUrlTasks = requests |> Seq.map getRequestUrl
+            let getUrlTasks =
+                requests |> Seq.map getRequestUrl
 
             let! urls = Task.WhenAll getUrlTasks
             return urls |> Array.map (fun request -> request.url)
@@ -114,7 +126,8 @@ module App =
 
     let loadPassesDataFromCacheUrls (client: HttpClient) (urls: string array) =
         task {
-            let tasks = Array.map (loadPassDataFromCacheUrl client) urls
+            let tasks =
+                Array.map (loadPassDataFromCacheUrl client) urls
 
             return! Task.WhenAll tasks
         }
@@ -152,7 +165,8 @@ module App =
                     | Ok pass -> Ok pass
 
             // 3. Extract data from pass files
-            let passPackageResults = Array.map toPassPackage packagesDataLoadResults
+            let passPackageResults =
+                Array.map toPassPackage packagesDataLoadResults
 
             return passPackageResults
         }
@@ -190,4 +204,5 @@ module App =
         [<Inject>]
         member val HttpClient = Unchecked.defaultof<HttpClient> with get, set
 
-        override this.Program = createProgram this.JSRuntime this.HttpClient
+        override this.Program =
+            createProgram this.JSRuntime this.HttpClient
