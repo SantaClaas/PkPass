@@ -33,7 +33,7 @@
       "url": "_framework\/icudt.dat"
     },
     {
-      "hash": "sha256-Ip6WmvKtOG5fKQSCL2Dh86jhJ1xWLG59qqUnVsyemmU=",
+      "hash": "sha256-f\/VazJc4yuRiE+\/P3TfbFEct3kEWpZ+vO52ab09Dvz8=",
       "url": "_framework\/blazor.boot.json"
     },
     {
@@ -157,7 +157,7 @@
       "url": "_framework\/netstandard.dll"
     },
     {
-      "hash": "sha256-jr6qAMcO+Si0iFcZLLor9zNaJTOPL2\/wFiT9k98UZE0=",
+      "hash": "sha256-fgKsI26Ay\/AWOpaS+vk46sB3tZEZMQSQ9iFD9uVRbxw=",
       "url": "_framework\/PkPass.dll"
     },
     {
@@ -453,5 +453,5 @@
       "url": "index.html"
     }
   ],
-  "version": "pjx37ZlH"
+  "version": "qYr2w691"
 };
