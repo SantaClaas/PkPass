@@ -76,4 +76,4 @@ async function onFetch(event) {
     await cache.put(request, response);
 
     return Response.redirect(path, 303);
-}/* Manifest version: RVEj7Q8l */
+}/* Manifest version: 5FVBgQ/q */
