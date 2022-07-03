@@ -33,7 +33,7 @@
       "url": "_framework\/icudt.dat"
     },
     {
-      "hash": "sha256-f\/VazJc4yuRiE+\/P3TfbFEct3kEWpZ+vO52ab09Dvz8=",
+      "hash": "sha256-6IX6SXp5LSCr2tvBojJUi8dQSpVShvkeZpTfM6+cUk4=",
       "url": "_framework\/blazor.boot.json"
     },
     {
@@ -41,7 +41,7 @@
       "url": "_framework\/Bolero.dll"
     },
     {
-      "hash": "sha256-62dZMjIHsCUMFfrcxv1JZz0NjLSi1iUOG35\/OysfPrE=",
+      "hash": "sha256-Cgrzh\/JjLGyeTUDmiALFHPJSatqIz3c4QmhtM6UGF3U=",
       "url": "_framework\/Bolero.Html.dll"
     },
     {
@@ -157,7 +157,7 @@
       "url": "_framework\/netstandard.dll"
     },
     {
-      "hash": "sha256-fgKsI26Ay\/AWOpaS+vk46sB3tZEZMQSQ9iFD9uVRbxw=",
+      "hash": "sha256-vT\/qizVAv0PvZD76cjInLzdV7E\/XzuFUmMV3P8JQyfI=",
       "url": "_framework\/PkPass.dll"
     },
     {
@@ -209,10 +209,6 @@
       "url": "_framework\/System.IO.Compression.dll"
     },
     {
-      "hash": "sha256-U6u1x2PtqyhAy02ceeKjzo\/rc7bVyO6IjoYYNUWpZaU=",
-      "url": "_framework\/System.IO.Compression.ZipFile.dll"
-    },
-    {
       "hash": "sha256-UAllEbdwL8MqFB7HOVM4IgelJ1O3RCROBDlU\/\/IOGFs=",
       "url": "_framework\/System.IO.dll"
     },
@@ -233,7 +229,7 @@
       "url": "_framework\/System.Memory.dll"
     },
     {
-      "hash": "sha256-H3s6oezzNcJTkvbricIFoE6\/ETXbtuzNQvHsGsTJ6r0=",
+      "hash": "sha256-EU9El5b2TUu5TDGUplOkczThVoaEnkHnbuqDN80ZGJQ=",
       "url": "_framework\/System.Net.Http.dll"
     },
     {
@@ -257,7 +253,7 @@
       "url": "_framework\/System.ObjectModel.dll"
     },
     {
-      "hash": "sha256-09MZpSHuJMv9nmRjbcZr1vUi2xKFL1i+bSmqt3IHSAk=",
+      "hash": "sha256-AkE8rb98JwBNF48vfTBbZfJRreRv74ddfLLmTo1p7PM=",
       "url": "_framework\/System.Private.CoreLib.dll"
     },
     {
@@ -265,7 +261,7 @@
       "url": "_framework\/System.Private.Runtime.InteropServices.JavaScript.dll"
     },
     {
-      "hash": "sha256-EeOeYAPCk+iilBlEqKXD\/eiZjI1E10TMKMVVSgnaJuc=",
+      "hash": "sha256-DCwR0wEUZUTkSQY168yik1lLk3D6sWGvmmkLouDviDI=",
       "url": "_framework\/System.Private.Uri.dll"
     },
     {
@@ -273,7 +269,7 @@
       "url": "_framework\/System.Runtime.CompilerServices.Unsafe.dll"
     },
     {
-      "hash": "sha256-+XUnBPj5XKiKjYL0y4m2xQqIIRfxL38aT3QptCbySxc=",
+      "hash": "sha256-2WBZegt6ch\/+qTep6Bxy3PKClcXpfl+xQPF2Bn79iFU=",
       "url": "_framework\/System.Runtime.dll"
     },
     {
@@ -385,7 +381,7 @@
       "url": "favicon.ico"
     },
     {
-      "hash": "sha256-rxueaSbjDsUkzyQ+i4A2nYHe9oNhPLvR7Xmy6oMKRsI=",
+      "hash": "sha256-3vHvTMFkyB1dQnmZYgMA5Os4nvmRwv+gMOW2wIRikps=",
       "url": "fileHandling.js"
     },
     {
@@ -453,5 +449,5 @@
       "url": "index.html"
     }
   ],
-  "version": "qYr2w691"
+  "version": "5524zWN3"
 };

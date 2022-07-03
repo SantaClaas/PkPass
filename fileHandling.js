@@ -1,6 +1,6 @@
 ﻿const cacheFiles = async fileHandles => {
-    if(fileHandles.length === 0) return;
-    
+    if (fileHandles.length === 0) return;
+
     const cacheOpenPromise = caches.open("files");
     const getFilesPromises = fileHandles.map(handle => handle.getFile());
     const files = await Promise.all(getFilesPromises);
@@ -8,7 +8,15 @@
     const putFilesInCachePromises = files.map(file => {
         const path = `/files/${file.name}`;
         const request = new Request(path, {method: "GET"});
-        const response = new Response(file, {status: 200, statusText: "OK"});
+        const requestOptions = {
+            status: 200,
+            statusText: "OK",
+            headers: new Headers({
+                // "attachment" is the the better fit than "inline" even though not 100% correct
+                "Content-Disposition": `attachment; filename=${file.name}`
+            })
+        }
+        const response = new Response(file, requestOptions);
         return cache.put(request, response);
     });
     await Promise.all(putFilesInCachePromises);
