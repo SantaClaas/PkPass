@@ -1,10 +1,8 @@
-﻿const cacheFiles = async fileHandles => {
-    if (fileHandles.length === 0) return;
+﻿
+const cacheFiles = async files => {
+    if (files.length === 0) return;
 
-    const cacheOpenPromise = caches.open("files");
-    const getFilesPromises = fileHandles.map(handle => handle.getFile());
-    const files = await Promise.all(getFilesPromises);
-    const cache = await cacheOpenPromise;
+    const cache = await caches.open("files");
     const putFilesInCachePromises = files.map(file => {
         const path = `/files/${file.name}`;
         const request = new Request(path, {method: "GET"});
@@ -21,6 +19,12 @@
     });
     await Promise.all(putFilesInCachePromises);
 }
+
+const cacheFileHandles = async fileHandles => {
+    const getFilesPromises = fileHandles.map(handle => handle.getFile());
+    const files = await Promise.all(getFilesPromises);
+    await cacheFiles(files);
+}
 if ('launchQueue' in window && 'files' in LaunchParams.prototype) {
     console.info("File Handling API is supported! 🥳🎉");
     /* 
@@ -34,37 +38,37 @@ if ('launchQueue' in window && 'files' in LaunchParams.prototype) {
 
             return;
         }
-
-        cacheFiles(launchParameters.files)
+        
+        cacheFileHandles(launchParameters.files)
             .catch(console.error);
         //TODO notify app or navigate to open page for one pass 
         // .then(() => window.open("/open/" + file.name, "_self"))
-
     })
 } else {
-    console.info("Fole Handling API is not supported 😔. Maybe it is only in canary or dev chromium browser versions yet?");
+    console.info("File Handling API is not supported 😔. Maybe it is only in canary or dev chromium browser versions yet?");
 }
 
 const getFilesUsingInput = input =>
     new Promise((resolve, reject) => {
-        // Generous timeout of an hour
-        const timeOutInMilliseconds = 1000 * 60 * 60;
+        // Generous timeout of 5 minutes
+        const timeOutInMilliseconds = 1000 * 60 * 5;
         const timeoutId = setTimeout(() => {
             reject("Timed out waiting for event to notify files have changed");
         }, timeOutInMilliseconds);
-
+        
         const handleChange = (event) => {
             input.removeEventListener("change", handleChange);
             clearTimeout(timeoutId);
-            resolve(event.target.files);
+            const files = Array.from(event.target.files);
+            resolve(files);
         }
-
+        input.addEventListener("blur", () => console.info("blur"));
         input.addEventListener("change", handleChange);
         input.click();
     });
 
 const getFilesFromUser = async fallBackInput => {
-    if (!window.hasOwnProperty('showOpenFilePicker')) {
+    if (!window.hasOwnProperty('showOpenFilePicker') || true) {
         return await getFilesUsingInput(fallBackInput);
     }
 
@@ -79,16 +83,18 @@ const getFilesFromUser = async fallBackInput => {
             }
         ]
     };
-    return window.showOpenFilePicker(options);
+    const fileHandles = await window.showOpenFilePicker(options);
+    const getFilesPromises = fileHandles.map(handle => handle.getFile());
+    return await Promise.all(getFilesPromises);
 }
 
 async function getAndCacheFilesFromUser(fallBackInput) {
-// const getAndCacheFilesFromUser = async fallBackInput => {
     const files = await getFilesFromUser(fallBackInput);
     if (files.length === 0) {
         console.info("User selected no files.");
         return;
     }
+    
     await cacheFiles(files);
 }
 
