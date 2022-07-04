@@ -10,6 +10,7 @@ open PkPass.Interop
 open PkPass.LoadPass
 open PkPass.PassKit.Deserialization
 open PkPass.PassKit.Package
+open FSharp.Core.Result
 
 // Describes all the errors that can occur when loading a pass
 
@@ -188,7 +189,9 @@ module HomePage =
 
                 // Button click has big side effect of requesting files from user and loading them into cache where
                 // we need to pick them up
-                ecomp<AddPassFloatingActionButton, _, _> () (fun _ -> dispatch HomePageMessage.LoadPasses) {
+                ecomp<AddPassFloatingActionButton, _, _> () (fun _ ->
+                    Console.WriteLine "Dispaych"
+                    dispatch HomePageMessage.LoadPasses) {
                     attr.empty ()
                 }
             }
