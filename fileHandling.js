@@ -1,5 +1,4 @@
-﻿
-const cacheFiles = async files => {
+﻿const cacheFiles = async files => {
     if (files.length === 0) return;
 
     const cache = await caches.open("files");
@@ -25,6 +24,7 @@ const cacheFileHandles = async fileHandles => {
     const files = await Promise.all(getFilesPromises);
     await cacheFiles(files);
 }
+
 if ('launchQueue' in window && 'files' in LaunchParams.prototype) {
     console.info("File Handling API is supported! 🥳🎉");
     /* 
@@ -38,7 +38,7 @@ if ('launchQueue' in window && 'files' in LaunchParams.prototype) {
 
             return;
         }
-        
+
         cacheFileHandles(launchParameters.files)
             .catch(console.error);
         //TODO notify app or navigate to open page for one pass 
@@ -48,54 +48,46 @@ if ('launchQueue' in window && 'files' in LaunchParams.prototype) {
     console.info("File Handling API is not supported 😔. Maybe it is only in canary or dev chromium browser versions yet?");
 }
 
-const getFilesUsingInput = input =>
-    new Promise((resolve, reject) => {
-        // Generous timeout of 5 minutes
-        const timeOutInMilliseconds = 1000 * 60 * 5;
-        const timeoutId = setTimeout(() => {
-            reject("Timed out waiting for event to notify files have changed");
-        }, timeOutInMilliseconds);
-        
-        const handleChange = (event) => {
-            input.removeEventListener("change", handleChange);
-            clearTimeout(timeoutId);
-            const files = Array.from(event.target.files);
-            resolve(files);
-        }
-        input.addEventListener("blur", () => console.info("blur"));
-        input.addEventListener("change", handleChange);
-        input.click();
-    });
-
-const getFilesFromUser = async fallBackInput => {
-    if (!window.hasOwnProperty('showOpenFilePicker') || true) {
-        return await getFilesUsingInput(fallBackInput);
-    }
-
-    const options = {
-        types: [
-            {
-                description: 'Pass files',
-                accept: {
-                    'application/vnd.apple.pkpass': ['.pkpass'],
-                    'application/vnd.apple.pkpasses': ['.pkpasses']
-                }
+const options = {
+    types: [
+        {
+            description: 'Pass files',
+            accept: {
+                'application/vnd.apple.pkpass': ['.pkpass'],
+                'application/vnd.apple.pkpasses': ['.pkpasses']
             }
-        ]
-    };
-    const fileHandles = await window.showOpenFilePicker(options);
-    const getFilesPromises = fileHandles.map(handle => handle.getFile());
-    return await Promise.all(getFilesPromises);
-}
+        }
+    ]
+};
 
-async function getAndCacheFilesFromUser(fallBackInput) {
-    const files = await getFilesFromUser(fallBackInput);
-    if (files.length === 0) {
-        console.info("User selected no files.");
-        return;
+const isFilePickerSupported = window.hasOwnProperty('showOpenFilePicker');
+
+async function registerClick(button, fallbackInput, dotnetCallbackReference) {
+    const cacheInputFiles = async () => {
+        const files = Array.from(fallbackInput.files);
+        await cacheFiles(files);
+        await dotnetCallbackReference.invokeMethodAsync("PassesChanged");
+        // Reset input so the event triggers when the same file is added
+        fallbackInput.value = null;
     }
-    
-    await cacheFiles(files);
+
+    fallbackInput.addEventListener("change", () => cacheInputFiles().catch(console.error))
+
+    const requestFilesOrClickInput = async () => {
+        if (!isFilePickerSupported) {
+            // The change event will be triggered which will cause the input change handler that caches the files
+            fallbackInput.click();
+            return;
+        }
+
+        const fileHandles = await window.showOpenFilePicker(options);
+        const getFilesPromises = fileHandles.map(handle => handle.getFile());
+        const files = await Promise.all(getFilesPromises);
+        await cacheFiles(files);
+        await dotnetCallbackReference.invokeMethodAsync("PassesChanged");
+    }
+
+    button.addEventListener("click", () => requestFilesOrClickInput().catch(console.error));
 }
 
 console.info("File handling loaded");
