@@ -6,14 +6,12 @@
         <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
         <Version>0.2.2</Version>
     </PropertyGroup>
-    
-    <ItemGroup>
-        <Folder Include="wwwroot\fonts\" />
-    </ItemGroup>
+
     <ItemGroup>
         <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
-        <Content Include="README.md" />
+        <Folder Include="wwwroot\fonts\" />
     </ItemGroup>
+
     <ItemGroup>
         <!-- Order is important in F# :) -->
         <Compile Include="Resets.fs" />
@@ -45,7 +43,6 @@
         <!-- For QR code generation. Might think about adding ZXing dependency for Aztec and other barcode formats-->
         <PackageReference Include="QRCoder" Version="1.4.3" />
     </ItemGroup>
-
 
 
 </Project>

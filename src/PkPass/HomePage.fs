@@ -101,58 +101,81 @@ module HomePage =
 
     let private renderEventTicket passDefinition passStructure passPackage dispatch =
         li {
-            attr.``class`` "bg-white/5 flex gap-3 p-3 rounded-xl justify-between"
-
-            // Just trigger a delete for now until I have implemented a proper interaction
-            // If I feel fancy it is going to be a swipe
-            on.click (fun _ ->
-                passPackage.fileName
-                |> HomePageMessage.DeletePass
-                |> dispatch)
-
-            renderPassThumbnail passPackage.thumbnail
-
+            attr.``class`` "bg-white/5 rounded-xl overflow-hidden"
             div {
-                attr.``class`` "flex flex-col justify-between"
+                // Source: https://oh-snap.netlify.app/#overscroll 👏
+                let swipeActionStyles ="flex justify-center first:justify-end last:justify-start items-center \
+                                        text-2xl gap-3 p-3 "
+
+                attr.``class``
+                    "grid grid-cols-[100%_100%] grid-rows-[[action]_1fr] \
+                     overflow-x-scroll overscroll-x-contain \
+                     snap-x snap-mandatory snap-always text-white"
 
                 div {
-                    cond passStructure.primaryFields (fun fields ->
-                        match passStructure.primaryFields with
-                        | Some [ first ] ->
-                            concat {
-                                renderPrimaryField first passStructure.headerFields
+                    attr.``class`` $"{swipeActionStyles} snap-center overflow-y-hidden bg-inherit z-10 shadow"
 
-                                h2 {
-                                    attr.``class`` "leading-none text-lg font-medium text-emphasis-high"
-                                    string first.value
-                                }
+                    div {
+                        attr.``class`` "flex gap-3 justify-between"
+
+                        // Just trigger a delete for now until I have implemented a proper interaction
+                        // If I feel fancy it is going to be a swipe
+                        on.click (fun _ ->
+                            passPackage.fileName
+                            |> HomePageMessage.DeletePass
+                            |> dispatch)
+
+                        renderPassThumbnail passPackage.thumbnail
+
+                        div {
+                            attr.``class`` "flex flex-col justify-between"
+
+                            div {
+                                cond passStructure.primaryFields (fun fields ->
+                                    match passStructure.primaryFields with
+                                    | Some [ first ] ->
+                                        concat {
+                                            renderPrimaryField first passStructure.headerFields
+
+                                            h2 {
+                                                attr.``class`` "leading-none text-lg font-medium text-emphasis-high"
+                                                string first.value
+                                            }
+                                        }
+
+                                    | _ -> empty ())
                             }
 
-                        | _ -> empty ())
-                }
+                            div {
+                                cond passStructure.secondaryFields (fun fields ->
+                                    match fields with
+                                    | Some [ first ] ->
+                                        concat {
+                                            cond first.label (fun label ->
+                                                match label with
+                                                | Some (LocalizableString.LocalizableString label) ->
+                                                    h5 {
+                                                        attr.``class``
+                                                            "text-xs tracking-wider text-emphasis-low uppercase"
 
-                div {
-                    cond passStructure.secondaryFields (fun fields ->
-                        match fields with
-                        | Some [ first ] ->
-                            concat {
-                                cond first.label (fun label ->
-                                    match label with
-                                    | Some (LocalizableString.LocalizableString label) ->
-                                        h5 {
-                                            attr.``class`` "text-xs tracking-wider text-emphasis-low uppercase"
+                                                        label
+                                                    }
+                                                | _ -> empty ())
 
-                                            label
+                                            h4 {
+                                                attr.``class`` "leading-none text-sm font-medium text-emphasis-medium"
+
+                                                string first.value
+                                            }
                                         }
                                     | _ -> empty ())
-
-                                h4 {
-                                    attr.``class`` "leading-none text-sm font-medium text-emphasis-medium"
-
-                                    string first.value
-                                }
                             }
-                        | _ -> empty ())
+                        }
+                    }
+                }
+                div {
+                    attr.``class`` $"{swipeActionStyles} bg-red-500"
+                    "delete"
                 }
             }
         }
