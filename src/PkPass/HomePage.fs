@@ -174,7 +174,7 @@ module HomePage =
                     }
                 }
                 div {
-                    attr.``class`` $"{swipeActionStyles} bg-red-500"
+                    attr.``class`` $"{swipeActionStyles} snap-center bg-red-500"
                     "delete"
                 }
             }
