@@ -27,6 +27,20 @@
                 -webkit-tap-highlight-color: transparent;
             }
         }
+        
+        @layer utility {
+            .invisible-scrollbar::-webkit-scrollbar {
+                display: none;
+                scrollbar-color: transparent;
+                width: 0;
+            }
+
+            .invisible-scrollbar {
+                scrollbar-width: none;
+            }
+        }
+    </style>
+    <style>
     </style>
     <script>
         //const defaultTheme = require('tailwindcss/defaultTheme')
