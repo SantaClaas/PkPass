@@ -8,6 +8,8 @@ open Bolero.Html.attr
 open System.Collections.Generic
 open Microsoft.AspNetCore.Components
 open Microsoft.JSInterop
+open PkPass.PassKit.Deserialization
+open PkPass.PassKit.Package
 
 type ContainedButtonModel = { label: string; icon: Node option }
 
@@ -281,4 +283,124 @@ type AddPassFloatingActionButton() =
                 accept (String.Join(',', pkPassMimeType, pkPassesMimeType, pkPassFileExtension, pkPassesFileExtension))
                 fallBackInputReference
             }
+        }   
+
+type PassPackageCard() =
+    inherit ElmishComponent<PassPackage,unit>()
+    
+    let scrollContainerReference = HtmlRef()
+    let deleteSectionReference = HtmlRef()
+    
+    let createPngDataUrl base64String = $"data:image/png;base64,{base64String}"
+    let renderPassThumbnail thumbnail =
+        match thumbnail with
+        | PassThumbnail (Image.Base64 base64String) ->
+            img {
+                attr.``class`` "w-20 rounded-lg"
+                base64String |> createPngDataUrl |> attr.src
+            }
+
+    let renderPrimaryField (field: Field) (headerFields : Field list option) =
+        cond field.label (fun label ->
+            match label with
+            | Some (LocalizableString.LocalizableString label) ->
+                h3 {
+                    attr.``class`` "flex justify-between items-end mb-1"
+
+                    Html.span {
+                        attr.``class`` "font-bold uppercase text-xs tracking-wider text-emphasis-low"
+                        label
+                    }
+
+                    match headerFields with
+                    | Some [ first ] ->
+                        Html.span {
+                            attr.``class`` "text-sm text-emphasis-medium leading-none"
+                            string first.value
+                        }
+                    | _ -> Html.empty ()
+                }
+            | _ -> Html.empty ())
+
+    let renderEventTicket passStructure package dispatch =
+        li {
+            attr.``class`` "bg-white/5 rounded-xl overflow-hidden"
+            
+            div {
+                // Source: https://oh-snap.netlify.app/#overscroll 👏
+                let swipeActionStyles ="flex justify-center first:justify-end last:justify-start items-center \
+                                        text-2xl gap-3 p-3 "
+                attr.``class``
+                    "grid grid-cols-[100%_100%] grid-rows-[[action]_1fr] \
+                    overflow-x-scroll overscroll-x-contain \
+                    snap-x snap-mandatory snap-always text-white \
+                    invisible-scrollbar"
+                    
+                scrollContainerReference
+                    
+                div {
+                    attr.``class`` $"{swipeActionStyles} snap-center overflow-y-hidden bg-inherit z-10 shadow"
+                    
+                    div {
+                        attr.``class`` "flex gap-3 justify-between"
+                        renderPassThumbnail package.thumbnail
+                        
+                        div {
+                            attr.``class`` "flex flex-col justify-between"
+                            
+                            div {
+                                cond passStructure.primaryFields (fun fields ->
+                                    match fields with
+                                    | Some [ first ] -> 
+                                        concat {
+                                            renderPrimaryField first passStructure.headerFields
+
+                                            h2 {
+                                                attr.``class`` "leading-none text-lg font-medium text-emphasis-high"
+                                                string first.value
+                                            }
+                                        }
+                                    | _ -> Html.empty ())
+                            }
+
+                            div {
+                                cond passStructure.secondaryFields (fun fields ->
+                                    match fields with
+                                    | Some [ first ] -> 
+                                        concat {
+                                            cond first.label (fun label -> 
+                                                match label with
+                                                | Some (LocalizableString.LocalizableString label) ->
+                                                    h5 {
+                                                        attr.``class`` "text-xs tracking-wider text-emphasis-low uppercase"
+
+                                                        label
+                                                    }
+                                                | _ -> Html.empty ()) 
+
+                                            h4 {
+                                                attr.``class`` "leading-none text-sm font-medium text-emphasis-medium"
+
+                                                string first.value
+                                            }       
+                                        }
+                                    | _ -> Html.empty ())
+                            }
+                        }
+                    }
+                }
+
+                div {
+                    attr.``class`` $"{swipeActionStyles} snap-center bg-red-500"
+                    deleteSectionReference
+                    "delete"
+                }
+            }
         }
+        
+    override this.View package dispatch =
+        cond package.pass (fun pass ->
+            match pass with
+            | EventTicket (passDefinition, passStructure: PassStructure) -> renderEventTicket passStructure package dispatch
+            | _ -> li { "Sorry this pass type is not supported yet" } )
+    

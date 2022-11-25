@@ -91,109 +91,13 @@ module HomePage =
                 }
             | _ -> empty ())
 
-    let private renderPassThumbnail thumbnail =
-        match thumbnail with
-        | PassThumbnail (Image.Base64 base64String) ->
-            img {
-                attr.``class`` "w-20 rounded-lg"
-                base64String |> createPngDataUrl |> attr.src
-            }
-
-    let private renderEventTicket passDefinition passStructure passPackage dispatch =
-        li {
-            attr.``class`` "bg-white/5 rounded-xl overflow-hidden"
-            div {
-                // Source: https://oh-snap.netlify.app/#overscroll 👏
-                let swipeActionStyles ="flex justify-center first:justify-end last:justify-start items-center \
-                                        text-2xl gap-3 p-3 "
-
-                attr.``class``
-                    "grid grid-cols-[100%_100%] grid-rows-[[action]_1fr] \
-                     overflow-x-scroll overscroll-x-contain \
-                     snap-x snap-mandatory snap-always text-white"
-
-                div {
-                    attr.``class`` $"{swipeActionStyles} snap-center overflow-y-hidden bg-inherit z-10 shadow"
-
-                    div {
-                        attr.``class`` "flex gap-3 justify-between"
-
-                        // Just trigger a delete for now until I have implemented a proper interaction
-                        // If I feel fancy it is going to be a swipe
-                        on.click (fun _ ->
-                            passPackage.fileName
-                            |> HomePageMessage.DeletePass
-                            |> dispatch)
-
-                        renderPassThumbnail passPackage.thumbnail
-
-                        div {
-                            attr.``class`` "flex flex-col justify-between"
-
-                            div {
-                                cond passStructure.primaryFields (fun fields ->
-                                    match passStructure.primaryFields with
-                                    | Some [ first ] ->
-                                        concat {
-                                            renderPrimaryField first passStructure.headerFields
-
-                                            h2 {
-                                                attr.``class`` "leading-none text-lg font-medium text-emphasis-high"
-                                                string first.value
-                                            }
-                                        }
-
-                                    | _ -> empty ())
-                            }
-
-                            div {
-                                cond passStructure.secondaryFields (fun fields ->
-                                    match fields with
-                                    | Some [ first ] ->
-                                        concat {
-                                            cond first.label (fun label ->
-                                                match label with
-                                                | Some (LocalizableString.LocalizableString label) ->
-                                                    h5 {
-                                                        attr.``class``
-                                                            "text-xs tracking-wider text-emphasis-low uppercase"
-
-                                                        label
-                                                    }
-                                                | _ -> empty ())
-
-                                            h4 {
-                                                attr.``class`` "leading-none text-sm font-medium text-emphasis-medium"
-
-                                                string first.value
-                                            }
-                                        }
-                                    | _ -> empty ())
-                            }
-                        }
-                    }
-                }
-                div {
-                    attr.``class`` $"{swipeActionStyles} snap-center bg-red-500"
-                    "delete"
-                }
-            }
-        }
-
-    let private renderPassPackage passPackage dispatch =
-        cond passPackage.pass (fun pass ->
-            match pass with
-            | EventTicket (passDefinition, passStructure) ->
-                renderEventTicket passDefinition passStructure passPackage dispatch
-            | _ -> li { "Sorry this pass type is not supported yet" })
-
     let private passesPreviewList loadResults dispatch =
         ul {
             forEach loadResults (fun result ->
                 cond result (fun result ->
                     match result with
                     | Error loadPassError -> p { "Sorry could not load that pass" }
-                    | Ok passPackage -> renderPassPackage passPackage dispatch))
+                    | Ok passPackage -> ecomp<PassPackageCard, _, _> passPackage (fun _ -> ()) { attr.empty () }))
 
         }
 
