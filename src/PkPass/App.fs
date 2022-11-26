@@ -4,9 +4,9 @@ open System
 open System.Net.Http
 open Bolero
 open Bolero.Html
-open Components
 open Elmish
 open Microsoft.AspNetCore.Components
+open PkPass.Components
 open PkPass.HomePage
 open PkPass.LoadPass
 

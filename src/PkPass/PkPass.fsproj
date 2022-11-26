@@ -25,7 +25,12 @@
     <Compile Include="Interop\Document.fs" />
     <Compile Include="LoadPass.fs" />
     <Compile Include="Events.fs" />
-    <Compile Include="Components.fs" />
+    <Compile Include="Components\FilledButton.fs" />
+    <Compile Include="Components\OutlinedInput.fs" />
+    <Compile Include="Components\VersionInformation.fs" />
+    <Compile Include="Components\FloatingActionButton.fs" />
+    <Compile Include="Components\AddPassFloatingActionButton.fs" />
+    <Compile Include="Components\PassPackageCard.fs" />
     <Compile Include="HomePage.fs" />
     <Compile Include="App.fs" />
     <Compile Include="Startup.fs" />
