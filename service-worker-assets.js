@@ -365,6 +365,10 @@
       "url": "books.json"
     },
     {
+      "hash": "sha256-10aXol7Onqv85rtqJQkZlzfW6xUpX0kH79yOSrF0JS8=",
+      "url": "brotli\/decode.min.js"
+    },
+    {
       "hash": "sha256-qU+KhVPK6oQw3UyjzAHU4xjRmCj3TLZUU\/+39dni9E0=",
       "url": "favicon.ico"
     },
@@ -433,7 +437,7 @@
       "url": "icon-512.png"
     },
     {
-      "hash": "sha256-23HNgipEYD5feuThgi5My2VjOv52yn7enzRz17f2iYg=",
+      "hash": "sha256-Xp61smKUgQ7fcMVfketsallwoxroahEZlWLtL3xNG7M=",
       "url": "index.html"
     },
     {
@@ -441,5 +445,5 @@
       "url": "scrollsnap.js"
     }
   ],
-  "version": "vb0PLQpE"
+  "version": "yTbvoOqT"
 };
