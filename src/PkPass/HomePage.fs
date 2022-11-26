@@ -97,7 +97,12 @@ module HomePage =
                 cond result (fun result ->
                     match result with
                     | Error loadPassError -> p { "Sorry could not load that pass" }
-                    | Ok passPackage -> ecomp<PassPackageCard, _, _> passPackage (fun _ -> ()) { attr.empty () }))
+                    | Ok passPackage ->
+                        ecomp<PassPackageCard, _, _> passPackage (function
+                            | PassPackageCardMessage.DeletePass passName ->
+                                HomePageMessage.DeletePass passName |> dispatch) {
+                        attr.empty ()
+                    }))
 
         }
 

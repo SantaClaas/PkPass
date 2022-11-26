@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PK PASS</title>
     <base href="/">
     <meta name="color-scheme" content="dark light">
@@ -11,13 +12,14 @@
     <!--For dark/light mode specifically-->
     <meta name="theme-color" content="#872e4e" media="(prefers-color-scheme: dark)">
     <!-- Make app installable -->
-    <link href="app.json.webmanifest" rel="manifest"/>
+    <link href="app.json.webmanifest" rel="manifest" />
 
     <!-- GoogleFonts: TODO self host -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
-          rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
+        rel="stylesheet">
 
     <!-- Tailwind CSS play CDN: TODO use proper build -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -184,11 +186,19 @@
     </script>
 
 </head>
-<body>
-<div id="main">Loading...</div>
-<script src="fileHandling.js"></script>
-<script src="_framework/blazor.webassembly.js"></script>
-<script>navigator.serviceWorker.register('service-worker.js');</script>
 
+<body>
+    <div id="main">Loading...</div>
+    <script src="fileHandling.js"></script>
+    <script src="_framework/blazor.webassembly.js"></script>
+    <script>navigator.serviceWorker.register('service-worker.js');</script>
+    <script>
+        // Blazor custom event set up for custom intersection event to enable deleting passes
+
+        Blazor.registerCustomEventType('intersect', {
+            createEventArgs: event => event.detail,
+        });
+    </script>
 </body>
+
 </html>

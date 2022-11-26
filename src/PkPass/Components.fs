@@ -1,7 +1,7 @@
 ﻿module Components
 
 open System
-open System.Threading.Tasks
+open System.Threading.Tasks 
 open Bolero
 open Bolero.Html
 open Bolero.Html.attr
@@ -10,6 +10,8 @@ open Microsoft.AspNetCore.Components
 open Microsoft.JSInterop
 open PkPass.PassKit.Deserialization
 open PkPass.PassKit.Package
+open PkPass.Events
+open PkPass.Events.Html
 
 type ContainedButtonModel = { label: string; icon: Node option }
 
@@ -285,12 +287,14 @@ type AddPassFloatingActionButton() =
             }
         }   
 
+type PassPackageCardMessage = DeletePass of passName : string
 type PassPackageCard() =
-    inherit ElmishComponent<PassPackage,unit>()
+    inherit ElmishComponent<PassPackage,PassPackageCardMessage>()
     
     let scrollContainerReference = HtmlRef()
     let deleteSectionReference = HtmlRef()
-    
+    let mutable intersectionObserver = Option.None
+
     let createPngDataUrl base64String = $"data:image/png;base64,{base64String}"
     let renderPassThumbnail thumbnail =
         match thumbnail with
@@ -392,15 +396,50 @@ type PassPackageCard() =
 
                 div {
                     attr.``class`` $"{swipeActionStyles} snap-center bg-red-500"
+                    on.intersect (fun arguments -> 
+                        if arguments.IsIntersecting then
+                            package.fileName
+                            |> PassPackageCardMessage.DeletePass
+                            |> dispatch
+                        else ())
                     deleteSectionReference
                     "delete"
                 }
             }
         }
         
+    [<Inject>]
+    member val JsRuntime = Unchecked.defaultof<IJSRuntime> with get, set
+
     override this.View package dispatch =
         cond package.pass (fun pass ->
             match pass with
             | EventTicket (passDefinition, passStructure: PassStructure) -> renderEventTicket passStructure package dispatch
             | _ -> li { "Sorry this pass type is not supported yet" } )
+
+    override this.OnAfterRenderAsync isFirstRender =
+        if isFirstRender then
+            task {
+                // let! jsFunction = this.JsRuntime.InvokeAsync<IJSObjectReference>("Function", "a", "b", "return a + b")
+                // jsFunction.
+                // Create intersection observer and invoke a .NET function when the action overlaps to take action here
+                use! jsModule = this.JsRuntime.InvokeAsync<IJSObjectReference>("import", "/scrollsnap.js")
+                // Save the intersection observer and dispose it when the component is disposed
+                // Might add update of CSS variable to change size of icon depending on how far the delete is swiped open
+                let! observer = jsModule.InvokeAsync<IJSObjectReference>("createObserver", scrollContainerReference, deleteSectionReference)
+                intersectionObserver <- Some observer
+                return ()
+            }
+        else 
+            Task.CompletedTask
+
+    interface IAsyncDisposable with
+        member this.DisposeAsync () = 
+            match intersectionObserver with
+            | Some observer -> 
+                task { 
+                    do! observer.InvokeVoidAsync("disconnect")
+                    do! observer.DisposeAsync ()
+                } |> ValueTask
+            | Option.None-> ValueTask.CompletedTask
     

@@ -1,48 +1,43 @@
 <Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
-
-    <PropertyGroup>
-        <TargetFramework>net7.0</TargetFramework>
-        <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
-        <Version>0.4.0</Version>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
-        <Folder Include="wwwroot\fonts\" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <!-- Order is important in F# 🙂 -->
-        <Compile Include="Resets.fs" />
-        <Compile Include="PassKit\Deserialization.fs" />
-        <Compile Include="PassKit\Package.fs" />
-        <Compile Include="PassKit\Barcode.fs" />
-        <Compile Include="Attributes.fs" />
-        <Compile Include="Interop\FileSystemFileHandle.fs" />
-        <Compile Include="Interop\LocalStorage.fs" />
-        <Compile Include="Interop\JsEnumerable.fs" />
-        <Compile Include="Interop\JsConsole.fs" />
-        <Compile Include="Interop\CachesStorage.fs" />
-        <Compile Include="Interop\Window.fs" />
-        <Compile Include="Interop\Element.fs" />
-        <Compile Include="Interop\Document.fs" />
-        <Compile Include="LoadPass.fs" />
-        <Compile Include="Components.fs" />
-        <Compile Include="HomePage.fs" />
-        <Compile Include="App.fs" />
-        <Compile Include="Startup.fs" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="Bolero" Version="0.20.18" />
-        <PackageReference Include="Bolero.Build" Version="0.20.18" />
-        <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="7.0.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="7.0.0" />
-        <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
-        <PackageReference Include="System.Net.Http.Json" Version="7.0.0" />
-        <!-- For QR code generation. Might think about adding ZXing dependency for Aztec and other barcode formats-->
-        <PackageReference Include="QRCoder" Version="1.4.3" />
-    </ItemGroup>
-
-
+  <PropertyGroup>
+    <TargetFramework>net7.0</TargetFramework>
+    <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+    <Version>0.4.0</Version>
+  </PropertyGroup>
+  <ItemGroup>
+    <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
+    <Folder Include="wwwroot\fonts\" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Order is important in F# 🙂 -->
+    <Compile Include="Resets.fs" />
+    <Compile Include="PassKit\Deserialization.fs" />
+    <Compile Include="PassKit\Package.fs" />
+    <Compile Include="PassKit\Barcode.fs" />
+    <Compile Include="Attributes.fs" />
+    <Compile Include="Interop\FileSystemFileHandle.fs" />
+    <Compile Include="Interop\LocalStorage.fs" />
+    <Compile Include="Interop\JsEnumerable.fs" />
+    <Compile Include="Interop\JsConsole.fs" />
+    <Compile Include="Interop\CachesStorage.fs" />
+    <Compile Include="Interop\Window.fs" />
+    <Compile Include="Interop\Element.fs" />
+    <Compile Include="Interop\Document.fs" />
+    <Compile Include="LoadPass.fs" />
+    <Compile Include="Events.fs" />
+    <Compile Include="Components.fs" />
+    <Compile Include="HomePage.fs" />
+    <Compile Include="App.fs" />
+    <Compile Include="Startup.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Bolero" Version="0.20.18" />
+    <PackageReference Include="Bolero.Build" Version="0.20.18" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="7.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="7.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
+    <PackageReference Include="System.Net.Http.Json" Version="7.0.0" />
+    <!-- For QR code generation. Might think about adding ZXing dependency for Aztec and other barcode formats-->
+    <PackageReference Include="QRCoder" Version="1.4.3" />
+  </ItemGroup>
 </Project>
