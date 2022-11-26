@@ -2,7 +2,6 @@ export function createObserver(scrollContainer, observerable) {
     
     function intersectionCallback(nodes) {
         for (let node of nodes) {
-            console.warn(node);
             const intersectionEvent = new CustomEvent("intersect", {
                 bubbles: true,
                 detail: { isIntersecting: node.isIntersecting},
