@@ -48,16 +48,8 @@
       "sizes": "2001x2001"
     }
   ],
-  "launch_handler": {
-
-  },
-
-  "name": "Passes",
-  "short_name": "Passes",
-  "start_url": "./",
-  "theme_color": "#c1445b",
-  "prefer_related_applications": false,
-  "orientation": "portrait-primary",
+  "name": "Claas' Passes",
+  "scope": "/",
   "screenshots": [
     {
       "src": "screenshot_pixel_5.png",
@@ -65,27 +57,6 @@
       "type": "image/png",
       "form_factor": "narrow",
       "label": "The overview of all passes showing one lonely pass and a button to add a new one at the bottom right"
-    }
-  ],
-  "file_handlers": [
-    {
-      "action": "/open",
-      "accept": {
-        "application/vnd.apple.pkpass": [
-          ".pkpass"
-        ],
-        "application/vnd.apple.pkpasses": [
-          ".pkpasses"
-        ]
-      },
-      "icons": [
-        {
-          "src": "icon.svg",
-          "type": "image/svg+xml",
-          "sizes": "any"
-        }
-      ],
-      "launch_type": "single-client"
     }
   ],
   "share_target": {
@@ -112,5 +83,33 @@
         }
       ]
     }
-  }
+  },
+
+  "short_name": "Passes",
+  "start_url": "https://pass.claas.dev",
+  "theme_color": "#c1445b",
+  "prefer_related_applications": false,
+  "orientation": "portrait-primary",
+
+  "file_handlers": [
+    {
+      "action": "/open",
+      "accept": {
+        "application/vnd.apple.pkpass": [
+          ".pkpass"
+        ],
+        "application/vnd.apple.pkpasses": [
+          ".pkpasses"
+        ]
+      },
+      "icons": [
+        {
+          "src": "icon.svg",
+          "type": "image/svg+xml",
+          "sizes": "any"
+        }
+      ],
+      "launch_type": "single-client"
+    }
+  ]
 }
