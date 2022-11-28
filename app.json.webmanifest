@@ -48,7 +48,7 @@
       "sizes": "2001x2001"
     }
   ],
-  "name": "Claas' Passes",
+  "name": "C-Pass",
   "scope": "/",
   "screenshots": [
     {
@@ -85,7 +85,7 @@
     }
   },
 
-  "short_name": "Passes",
+  "short_name": "C-Pass",
   "start_url": "https://pass.claas.dev",
   "theme_color": "#c1445b",
   "prefer_related_applications": false,
