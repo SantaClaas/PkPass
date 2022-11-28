@@ -1,17 +1,12 @@
 {
-  "android_package_name": "dev.claas.pass",
-  "background_color": "#ffffff",
-  "categories": [
-    "utilities",
-    "entertainment",
-    "social",
-    "sports",
-    "travel",
-    "shopping",
-    "productivity"
-  ],
-  "description": "Add and show passes for everything that wants a pass. Use it for your train ticket, the next event you are going to or just to send a package.",
+  "name": "Passes",
+  "short_name": "Passes",
+  "start_url": "./",
   "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#c1445b",
+  "prefer_related_applications": false,
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "icon.svg",
@@ -48,16 +43,6 @@
       "sizes": "2001x2001"
     }
   ],
-  "launch_handler": {
-
-  },
-
-  "name": "Passes",
-  "short_name": "Passes",
-  "start_url": "./",
-  "theme_color": "#c1445b",
-  "prefer_related_applications": false,
-  "orientation": "portrait-primary",
   "screenshots": [
     {
       "src": "screenshot_pixel_5.png",
