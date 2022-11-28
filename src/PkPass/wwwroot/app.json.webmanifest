@@ -6,6 +6,7 @@
   "background_color": "#ffffff",
   "theme_color": "#c1445b",
   "prefer_related_applications": false,
+  "orientation": "portrait-primary",
   "icons": [
     {
       "src": "icon.svg",
@@ -28,6 +29,15 @@
       "src": "splash.icon.svg",
       "type": "image/png",
       "sizes": "2001x2001"
+    }
+  ],
+  "screenshots": [
+    {
+      "src":"screenshot_pixel_5.png",
+      "sizes": "1081x2340",
+      "type":"image/png",
+      "form_factor" : "narrow",
+      "label": "The overview of all passes showing one lonely pass and a button to add a new one at the bottom right"
     }
   ],
   "file_handlers": [
