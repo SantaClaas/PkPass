@@ -441,7 +441,7 @@
       "url": "icon.svg"
     },
     {
-      "hash": "sha256-v0N3gOp0Jja\/7KtExSF1u2PgQuMnFMb62iB8JXnMdwQ=",
+      "hash": "sha256-O7nLeB6Qt4DMpZHu7hMkSVWigTA0O9x3omYn1nFPhiQ=",
       "url": "index.html"
     },
     {
@@ -481,5 +481,5 @@
       "url": "splash.icon.png"
     }
   ],
-  "version": "yHbyQMgY"
+  "version": "0Xf5Cwex"
 };
