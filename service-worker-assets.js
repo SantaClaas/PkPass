@@ -358,6 +358,10 @@
     },
     {
       "hash": "sha256-O0zXBMXe2wvUMk81uzL64mxT3yDqSH1QyaDLg9\/bsNo=",
+      "url": "app.json copy.webmanifest"
+    },
+    {
+      "hash": "sha256-zKVi7wmXeFNjGmi9YwEKE9u9a6bPDreJmzqtzRJ3VnY=",
       "url": "app.json.webmanifest"
     },
     {
@@ -477,5 +481,5 @@
       "url": "splash.icon.png"
     }
   ],
-  "version": "cqKvCAGA"
+  "version": "X9wQSEiK"
 };
