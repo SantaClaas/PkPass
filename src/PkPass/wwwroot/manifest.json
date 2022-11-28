@@ -86,7 +86,7 @@
   },
 
   "short_name": "C-Pass",
-  "start_url": "https://pass.claas.dev",
+  "start_url": "https://pass.claas.dev/",
   "theme_color": "#c1445b",
   "prefer_related_applications": false,
   "orientation": "portrait-primary",
