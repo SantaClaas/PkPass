@@ -20,6 +20,18 @@
       "purposes": "monochrome"
     },
     {
+      "src": "maskable_icon_x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purposes": "maskable"
+    },
+    {
+      "src": "maskable_icon_x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purposes": "maskable"
+    },
+    {
       "src": "maskable.icon.svg",
       "type": "image/svg+xml",
       "sizes": "any",
@@ -33,10 +45,10 @@
   ],
   "screenshots": [
     {
-      "src":"screenshot_pixel_5.png",
+      "src": "screenshot_pixel_5.png",
       "sizes": "1081x2340",
-      "type":"image/png",
-      "form_factor" : "narrow",
+      "type": "image/png",
+      "form_factor": "narrow",
       "label": "The overview of all passes showing one lonely pass and a button to add a new one at the bottom right"
     }
   ],
@@ -66,7 +78,7 @@
     "method": "POST",
     "enctype": "multipart/form-data",
     "params": {
-      "title" : "title",
+      "title": "title",
       "files": [
         {
           "name": "digital pass",
