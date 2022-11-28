@@ -33,7 +33,7 @@
       "url": "_framework\/icudt.dat"
     },
     {
-      "hash": "sha256-ZB3eEQZvYKj1A\/X\/jL9zOqYenJrAIhqPGjkwgB3nDEw=",
+      "hash": "sha256-R6Mm7kU9aT5tORhywAiJkSqYzL\/9JeucbvqkT21iKtM=",
       "url": "_framework\/blazor.boot.json"
     },
     {
@@ -157,7 +157,7 @@
       "url": "_framework\/netstandard.dll"
     },
     {
-      "hash": "sha256-PYwWML2\/by3UknOsJpoA51NB4bVs3zkim+a+5drX3BM=",
+      "hash": "sha256-DBWEPQwgpkN68y4oT4jVIThXLJNbHA1g9PT3H0wuL+8=",
       "url": "_framework\/PkPass.dll"
     },
     {
@@ -361,10 +361,6 @@
       "url": "app.json copy.webmanifest"
     },
     {
-      "hash": "sha256-UA9lYlhs4Mn9BNgUlI0Lx3klgj2anVqeBUllMqw2V3w=",
-      "url": "app.json.webmanifest"
-    },
-    {
       "hash": "sha256-M6OK7ejSpZOKWHEt7FbHS+T5nAz\/zpDKdo1e2A003EY=",
       "url": "apple-touch-icon.png"
     },
@@ -445,8 +441,12 @@
       "url": "icon.svg"
     },
     {
-      "hash": "sha256-WO3x1e\/wBqJ+z54Wacfyu+i2osS12+yONGCNyC5AInY=",
+      "hash": "sha256-v0N3gOp0Jja\/7KtExSF1u2PgQuMnFMb62iB8JXnMdwQ=",
       "url": "index.html"
+    },
+    {
+      "hash": "sha256-UA9lYlhs4Mn9BNgUlI0Lx3klgj2anVqeBUllMqw2V3w=",
+      "url": "manifest.json"
     },
     {
       "hash": "sha256-aUfrsviKVUmfUYN11tv\/v\/oJ1AiQKLlfXWih3ApNpN4=",
@@ -481,5 +481,5 @@
       "url": "splash.icon.png"
     }
   ],
-  "version": "MY6RDU4Q"
+  "version": "62fDyKzV"
 };
