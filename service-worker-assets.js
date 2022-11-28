@@ -361,7 +361,7 @@
       "url": "app.json copy.webmanifest"
     },
     {
-      "hash": "sha256-zKVi7wmXeFNjGmi9YwEKE9u9a6bPDreJmzqtzRJ3VnY=",
+      "hash": "sha256-EQ7ulx+UCkn89Z+qmF8W0yIfDjtQp\/BnTZVpOSYIIyU=",
       "url": "app.json.webmanifest"
     },
     {
@@ -481,5 +481,5 @@
       "url": "splash.icon.png"
     }
   ],
-  "version": "X9wQSEiK"
+  "version": "bxa5DISF"
 };
