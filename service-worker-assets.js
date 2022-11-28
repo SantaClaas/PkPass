@@ -357,8 +357,12 @@
       "url": "_framework\/zh-Hant\/FSharp.Core.resources.dll"
     },
     {
-      "hash": "sha256-LjE6yyPo2wev2pGuywUhJJ\/0CUyoPlpGxv3l9FZeXfo=",
+      "hash": "sha256-CH3LjObALwleTO1DOz+Kw722OlLYsbIWtIV\/FGXv2Ik=",
       "url": "app.json.webmanifest"
+    },
+    {
+      "hash": "sha256-M6OK7ejSpZOKWHEt7FbHS+T5nAz\/zpDKdo1e2A003EY=",
+      "url": "apple-touch-icon.png"
     },
     {
       "hash": "sha256-Ikx83KE4AoL05Skn7BFoer2aMCEzhT9Q3ByejmCmfiM=",
@@ -437,13 +441,29 @@
       "url": "icon-512.png"
     },
     {
-      "hash": "sha256-Xp61smKUgQ7fcMVfketsallwoxroahEZlWLtL3xNG7M=",
+      "hash": "sha256-lNoOpGxWjfBG3tWLFgE2hm8w8wScj+3bqXB9\/WFcgfE=",
+      "url": "icon.svg"
+    },
+    {
+      "hash": "sha256-nKqkXbFViGjVwq84i+VRNYRAAUFJxP\/0cqODktwNEko=",
       "url": "index.html"
+    },
+    {
+      "hash": "sha256-zY1JXEIQ5xrgMItXPbq4DDqR5Ys4K3kNYe2H+NEi6fY=",
+      "url": "maskable.icon.svg"
+    },
+    {
+      "hash": "sha256-c8znwaNlWqtkgBXBNm5Oc8PajD5fHo+\/cwLOGUJD\/Kc=",
+      "url": "monochrome.icon.svg"
     },
     {
       "hash": "sha256-n9Yk4\/xdCW6P14GvRely0nNek0Wje0Fwk6sEhpSaxxw=",
       "url": "scrollsnap.js"
+    },
+    {
+      "hash": "sha256-P\/qrQ7wdu6ZmCggYwkhGMptfuHBcJQ+rBmksCO0Adl4=",
+      "url": "splash.icon.png"
     }
   ],
-  "version": "yTbvoOqT"
+  "version": "k4rkq3h+"
 };
