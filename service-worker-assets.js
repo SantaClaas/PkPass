@@ -357,7 +357,7 @@
       "url": "_framework\/zh-Hant\/FSharp.Core.resources.dll"
     },
     {
-      "hash": "sha256-CH3LjObALwleTO1DOz+Kw722OlLYsbIWtIV\/FGXv2Ik=",
+      "hash": "sha256-rBm0M7XRWYvbmxgoq65y8rWr9HE4n1HxVapJTTGf9fU=",
       "url": "app.json.webmanifest"
     },
     {
@@ -441,11 +441,11 @@
       "url": "icon-512.png"
     },
     {
-      "hash": "sha256-lNoOpGxWjfBG3tWLFgE2hm8w8wScj+3bqXB9\/WFcgfE=",
+      "hash": "sha256-Eb8h\/92\/S9kKk\/sZs48GeGkkNfeh8pNFDuyweRObF0Y=",
       "url": "icon.svg"
     },
     {
-      "hash": "sha256-nKqkXbFViGjVwq84i+VRNYRAAUFJxP\/0cqODktwNEko=",
+      "hash": "sha256-WO3x1e\/wBqJ+z54Wacfyu+i2osS12+yONGCNyC5AInY=",
       "url": "index.html"
     },
     {
@@ -457,6 +457,10 @@
       "url": "monochrome.icon.svg"
     },
     {
+      "hash": "sha256-zgaJMpQibiJ8NIn3Qdg2BHrMl69XcDu9fuArwzRpwd8=",
+      "url": "screenshot_pixel_5.png"
+    },
+    {
       "hash": "sha256-n9Yk4\/xdCW6P14GvRely0nNek0Wje0Fwk6sEhpSaxxw=",
       "url": "scrollsnap.js"
     },
@@ -465,5 +469,5 @@
       "url": "splash.icon.png"
     }
   ],
-  "version": "k4rkq3h+"
+  "version": "Jkrbs6gc"
 };
