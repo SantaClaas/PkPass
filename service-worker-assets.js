@@ -445,11 +445,11 @@
       "url": "index.html"
     },
     {
-      "hash": "sha256-w+erxH5VlPlJKAhHANef2kVZY6qwj2ekK\/E0R3Vw1EA=",
+      "hash": "sha256-aUfrsviKVUmfUYN11tv\/v\/oJ1AiQKLlfXWih3ApNpN4=",
       "url": "maskable_icon_x192.png"
     },
     {
-      "hash": "sha256-SVoyBGPnpvxun+NKXU4mwyDh6wKCwIt9dDVNStPZ4KE=",
+      "hash": "sha256-fIpRL+AbWqps5OkXrYd3uT4d5KGR+mASvpVGq+nd9H4=",
       "url": "maskable_icon_x512.png"
     },
     {
@@ -477,5 +477,5 @@
       "url": "splash.icon.png"
     }
   ],
-  "version": "2agf\/yRx"
+  "version": "cqKvCAGA"
 };
