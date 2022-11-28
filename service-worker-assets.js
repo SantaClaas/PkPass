@@ -445,7 +445,7 @@
       "url": "index.html"
     },
     {
-      "hash": "sha256-UA9lYlhs4Mn9BNgUlI0Lx3klgj2anVqeBUllMqw2V3w=",
+      "hash": "sha256-Jm\/M2fMlK2Is5DptI7Ka+bshILJpbI1EbIlK9kB3fHw=",
       "url": "manifest.json"
     },
     {
@@ -481,5 +481,5 @@
       "url": "splash.icon.png"
     }
   ],
-  "version": "62fDyKzV"
+  "version": "g6PQ\/uyk"
 };
