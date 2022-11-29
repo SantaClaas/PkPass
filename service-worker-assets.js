@@ -361,6 +361,10 @@
       "url": "app.json copy.webmanifest"
     },
     {
+      "hash": "sha256-Jm\/M2fMlK2Is5DptI7Ka+bshILJpbI1EbIlK9kB3fHw=",
+      "url": "app.json.webmanifest"
+    },
+    {
       "hash": "sha256-M6OK7ejSpZOKWHEt7FbHS+T5nAz\/zpDKdo1e2A003EY=",
       "url": "apple-touch-icon.png"
     },
@@ -441,12 +445,8 @@
       "url": "icon.svg"
     },
     {
-      "hash": "sha256-O7nLeB6Qt4DMpZHu7hMkSVWigTA0O9x3omYn1nFPhiQ=",
+      "hash": "sha256-WO3x1e\/wBqJ+z54Wacfyu+i2osS12+yONGCNyC5AInY=",
       "url": "index.html"
-    },
-    {
-      "hash": "sha256-Jm\/M2fMlK2Is5DptI7Ka+bshILJpbI1EbIlK9kB3fHw=",
-      "url": "manifest.webmanifest"
     },
     {
       "hash": "sha256-aUfrsviKVUmfUYN11tv\/v\/oJ1AiQKLlfXWih3ApNpN4=",
@@ -481,5 +481,5 @@
       "url": "splash.icon.png"
     }
   ],
-  "version": "0Xf5Cwex"
+  "version": "z\/exTrcP"
 };
