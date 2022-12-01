@@ -18,6 +18,12 @@
       "purposes": "monochrome"
     },
     {
+      "src": "maskable_icon_x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purposes": "maskable"
+    },
+    {
       "src": "maskable_icon_x512.png",
       "type": "image/png",
       "sizes": "512x512",
