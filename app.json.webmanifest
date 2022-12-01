@@ -4,12 +4,13 @@
   "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#03173d",
+  "theme_color": "#c1445b",
   "icons": [
     {
       "src": "maskable_icon_x512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purposes": "maskable"
     }
   ]
 }
