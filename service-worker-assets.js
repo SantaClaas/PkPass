@@ -33,7 +33,7 @@
       "url": "_framework\/icudt.dat"
     },
     {
-      "hash": "sha256-zUrPkOYWe9\/lbTBchZTs8hLlSWVTAqnQPPd4a2fJ6WU=",
+      "hash": "sha256-UHmkF\/KJaCit09Zyb\/C7PysfYWaKvMN7P+dD8Z\/Y76Q=",
       "url": "_framework\/blazor.boot.json"
     },
     {
@@ -157,7 +157,7 @@
       "url": "_framework\/netstandard.dll"
     },
     {
-      "hash": "sha256-NtJ241Du51AMO0yOPxqC4\/JBT09FvV3oIjkkdsGf5f8=",
+      "hash": "sha256-kALwBQinBOfoT5+V+KhKLG2uIXQKdoKJYkalHA5KAso=",
       "url": "_framework\/PkPass.dll"
     },
     {
@@ -361,7 +361,7 @@
       "url": "app.json copy.webmanifest"
     },
     {
-      "hash": "sha256-MhToLx2tjWjhqVrNIryKYCfIbmY+Qd48dcd\/t29O0nE=",
+      "hash": "sha256-q1xx7BBWgzFStmRs+4rcRiZIs7O9OwCNvoOB3+eVZs4=",
       "url": "app.json.webmanifest"
     },
     {
@@ -481,5 +481,5 @@
       "url": "splash.icon.png"
     }
   ],
-  "version": "0KaexQsg"
+  "version": "gy6EEBon"
 };
