@@ -12,33 +12,10 @@
       "sizes": "any"
     },
     {
-      "src": "monochrome.icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
-      "purposes": "monochrome"
-    },
-    {
-      "src": "maskable_icon_x192.png",
-      "type": "image/png",
-      "sizes": "192x192",
-      "purposes": "maskable"
-    },
-    {
       "src": "maskable_icon_x512.png",
       "type": "image/png",
       "sizes": "512x512",
       "purposes": "maskable"
-    },
-    {
-      "src": "maskable.icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
-      "purposes": "maskable"
-    },
-    {
-      "src": "splash.icon.png",
-      "type": "image/png",
-      "sizes": "2001x2001"
     }
   ],
   "screenshots": [
