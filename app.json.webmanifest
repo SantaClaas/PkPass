@@ -28,6 +28,12 @@
       "type": "image/png",
       "sizes": "512x512",
       "purposes": "maskable"
+    },
+    {
+      "src": "maskable.icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purposes": "maskable"
     }
   ],
   "screenshots": [
