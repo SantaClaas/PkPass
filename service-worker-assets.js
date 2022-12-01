@@ -361,7 +361,7 @@
       "url": "app.json copy.webmanifest"
     },
     {
-      "hash": "sha256-6F7EnWH+N\/eheNvfwQ3on9xosNyGYuzv2Jw0JVoorGQ=",
+      "hash": "sha256-Qei3qiXNQDMMJQBMC7UdDSsUAO0haopIa5CaiLhssyw=",
       "url": "app.json.webmanifest"
     },
     {
@@ -461,7 +461,7 @@
       "url": "maskable_icon.png"
     },
     {
-      "hash": "sha256-8F7uyjio7kR98hJetT+tGKNL9NHwWzP49zJ2oxYTGck=",
+      "hash": "sha256-zY1JXEIQ5xrgMItXPbq4DDqR5Ys4K3kNYe2H+NEi6fY=",
       "url": "maskable.icon.svg"
     },
     {
@@ -481,5 +481,5 @@
       "url": "splash.icon.png"
     }
   ],
-  "version": "TwJ8SKZ0"
+  "version": "VEnbzlyX"
 };

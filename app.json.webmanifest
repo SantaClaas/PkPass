@@ -37,12 +37,6 @@
       "purposes": "maskable"
     },
     {
-      "src": "maskable.icon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any",
-      "purposes": "maskable"
-    },
-    {
       "src": "splash.icon.png",
       "type": "image/png",
       "sizes": "2001x2001"
