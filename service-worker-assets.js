@@ -33,7 +33,7 @@
       "url": "_framework\/icudt.dat"
     },
     {
-      "hash": "sha256-gnPmQsWx1Rs+DM6a3YK6nXSBVdmqpfo95GtTir0kG6Y=",
+      "hash": "sha256-G1cAUnjec7GOFnCTMcy9bmUjw1DaCuUxjLS+RBbWhcY=",
       "url": "_framework\/blazor.boot.json"
     },
     {
@@ -157,7 +157,7 @@
       "url": "_framework\/netstandard.dll"
     },
     {
-      "hash": "sha256-qUlRMFruLQKvSIfDNugkN2IGwsBO3Cly9o\/jdEV5fsk=",
+      "hash": "sha256-CJTF7BhGLY2g5j+Onc7XuDjCz0M+KmkLRL9p3mUsai0=",
       "url": "_framework\/PkPass.dll"
     },
     {
@@ -361,7 +361,7 @@
       "url": "app.json copy.webmanifest"
     },
     {
-      "hash": "sha256-ef5y0Fm9yRXs9GLoasRwpJw37Lp9JYl7pmEk0RnyVVY=",
+      "hash": "sha256-6F7EnWH+N\/eheNvfwQ3on9xosNyGYuzv2Jw0JVoorGQ=",
       "url": "app.json.webmanifest"
     },
     {
@@ -461,7 +461,7 @@
       "url": "maskable_icon.png"
     },
     {
-      "hash": "sha256-zY1JXEIQ5xrgMItXPbq4DDqR5Ys4K3kNYe2H+NEi6fY=",
+      "hash": "sha256-8F7uyjio7kR98hJetT+tGKNL9NHwWzP49zJ2oxYTGck=",
       "url": "maskable.icon.svg"
     },
     {
@@ -481,5 +481,5 @@
       "url": "splash.icon.png"
     }
   ],
-  "version": "nzSEl7sh"
+  "version": "TwJ8SKZ0"
 };
