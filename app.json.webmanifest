@@ -1,11 +1,16 @@
 {
-  "name": "C-Pass",
+  "name": "C-Pass 0.6.7",
   "short_name": "C-Pass",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#c1445b",
   "icons": [
+    {
+      "src": "icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
     {
       "src": "maskable_icon_x512.png",
       "type": "image/png",
