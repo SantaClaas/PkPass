@@ -1,10 +1,17 @@
 {
-  "name": "C-Pass",
-  "short_name": "C-Pass",
-  "start_url": "./",
-  "display": "standalone",
+  "android_package_name": "dev.claas.pass",
   "background_color": "#ffffff",
-  "theme_color": "#c1445b",
+  "categories": [
+    "utilities",
+    "entertainment",
+    "social",
+    "sports",
+    "travel",
+    "shopping",
+    "productivity"
+  ],
+  "description": "Add and show passes for everything that wants a pass. Use it for your train ticket, the next event you are going to or just to send a package.",
+  "display": "standalone",
   "icons": [
     {
       "src": "icon.svg",
@@ -34,8 +41,16 @@
       "type": "image/svg+xml",
       "sizes": "any",
       "purposes": "maskable"
+    },
+    {
+      "src": "splash.icon.png",
+      "type": "image/png",
+      "sizes": "2001x2001"
     }
   ],
+  "id": "/",
+  "name": "C-Pass",
+  "scope": "/",
   "screenshots": [
     {
       "src": "screenshot_pixel_5.png",
@@ -45,5 +60,55 @@
       "label": "The overview of all passes showing one lonely pass and a button to add a new one at the bottom right"
     }
   ],
-  "description": "Add and show passes for everything that wants a pass. Use it for your train ticket, the next event you are going to or just to drop off a package."
+  "share_target": {
+    "action": "/open",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "files": [
+        {
+          "name": "digital pass",
+          "accept": [
+            ".pkpass",
+            ".pkpasses",
+            "application/zip",
+            "application/octet-stream",
+            "application/vnd.apple.pkpass",
+            "application/vnd.apple.pkpasses",
+            "application/vnd.apple.pkpass+zip",
+            "application/vnd.apple.pkpasses+zip",
+            "application/vnd.apple.pkpass+octet-stream",
+            "application/vnd.apple.pkpasses+octet-stream"
+          ]
+        }
+      ]
+    }
+  },
+  "short_name": "C-Pass",
+  "start_url": "./",
+  "theme_color": "#c1445b",
+  "prefer_related_applications": false,
+  "orientation": "portrait-primary",
+  "file_handlers": [
+    {
+      "action": "/open",
+      "accept": {
+        "application/vnd.apple.pkpass": [
+          ".pkpass"
+        ],
+        "application/vnd.apple.pkpasses": [
+          ".pkpasses"
+        ]
+      },
+      "icons": [
+        {
+          "src": "icon.svg",
+          "type": "image/svg+xml",
+          "sizes": "any"
+        }
+      ],
+      "launch_type": "single-client"
+    }
+  ]
 }
