@@ -22,19 +22,19 @@
       "src": "monochrome.icon.svg",
       "type": "image/svg+xml",
       "sizes": "any",
-      "purposes": "monochrome"
+      "purpose": "monochrome"
     },
     {
       "src": "maskable_icon_x192.png",
       "type": "image/png",
       "sizes": "192x192",
-      "purposes": "maskable"
+      "purpose": "maskable"
     },
     {
       "src": "maskable_icon_x512.png",
       "type": "image/png",
       "sizes": "512x512",
-      "purposes": "maskable"
+      "purpose": "maskable"
     },
     {
       "src": "splash.icon.png",
