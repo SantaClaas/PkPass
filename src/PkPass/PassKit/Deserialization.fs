@@ -21,15 +21,26 @@ type LocalizableString = LocalizableString of string
 type LocalizableFormatString = LocalizableFormatString of string
 
 type PassDefinition =
-    { description: LocalizableString
+    { // Required values for all passes
+      description: LocalizableString
       formatVersion: int
       organizationName: LocalizableString
       passTypeIdentifier: string
       serialNumber: string
       teamIdentifier: string
       foregroundColor: CssColor option
+      /// <summary>
+      /// Optional color of the labeled text, specified as a CSS-style RGB triple. For example, rgb(255, 255, 255).
+      /// If omitted, the label color is determined automatically.
+      /// </summary>
       labelColor: CssColor option
-      // Deprecated since iOS 9 use barcodes instead
+      /// <summary>
+      /// Optional text displayed next to the logo on the pass
+      /// </summary>
+      logoText: LocalizableString option
+      /// <summary>
+      /// An optional barcode. For iOS 8 and earlier. Deprecated since iOS 9 use <see cref="barcodes"/> instead
+      /// </summary>
       barcode: Barcode option
       barcodes: Barcode list option
       relevanceDate: DateTimeOffset option }
@@ -370,6 +381,7 @@ type PassDeserializationState =
       passTypeIdentifier: string option
       teamIdentifier: string option
       foregroundColor: CssColor option
+      logoText: LocalizableString option
       labelColor: CssColor option
       barcode: Barcode option
       barcodes: Barcode list option
@@ -385,6 +397,7 @@ type PassDeserializationState =
           passTypeIdentifier = None
           teamIdentifier = None
           foregroundColor = None
+          logoText = None
           labelColor = None
           barcode = None
           barcodes = None
@@ -392,7 +405,15 @@ type PassDeserializationState =
           relevanceDate = None
           isPastRootStartObject = false }
 
-let private tryFinishPassDeserialization (state: PassDeserializationState) =
+/// <summary>
+/// Tries to convert an "unstable" pass that is just a collection of the values that can appear to a type safe pass
+/// structure that has to fulfill the requirements of a pass. If not all requirements are fulfilled the function returns
+/// an error detailing what is missing or was wrong. 
+/// </summary>
+/// <param name="state">
+/// The state representing all known properties with their values just that they are not guaranteed to exist
+/// </param>
+let private tryFinishPassDeserialization (state: PassDeserializationState) : Result<Pass, DeserializationError> =
     match state with
     // All the cases where a property was never added but is required
     | { description = None } ->
@@ -432,6 +453,7 @@ let private tryFinishPassDeserialization (state: PassDeserializationState) =
         teamIdentifier = Some teamIdentifier
         foregroundColor = foregroundColor
         labelColor = labelColor
+        logoText = logoText
         barcode = barcode
         barcodes = barcodes
         constructPass = Some constructPass
@@ -444,6 +466,7 @@ let private tryFinishPassDeserialization (state: PassDeserializationState) =
           teamIdentifier = teamIdentifier
           foregroundColor = foregroundColor
           labelColor = labelColor
+          logoText = logoText
           barcode = barcode
           barcodes = barcodes
           relevanceDate = relevanceDate }
@@ -498,15 +521,25 @@ let rec deserializePass
                     reader.GetString()
                     |> Option.ofObj
                     |> Option.map CssColor
-
-                deserializePass &reader None { state with labelColor = labelColor }
+                    
+                let newState = { state with labelColor = labelColor }
+                deserializePass &reader None newState
             | Some "foregroundColor" ->
                 let foregroundColor =
                     reader.GetString()
                     |> Option.ofObj
                     |> Option.map CssColor
-
-                deserializePass &reader None { state with foregroundColor = foregroundColor }
+                    
+                let newState = { state with foregroundColor = foregroundColor }
+                deserializePass &reader None newState
+            | Some "logoText" ->
+                let logoText =
+                    reader.GetString()
+                    |> Option.ofObj
+                    |> Option.map LocalizableString.LocalizableString
+                
+                let newState = { state with logoText = logoText }
+                deserializePass &reader None newState
             | other -> handleUnexpected &reader other
         | JsonTokenType.Number ->
             match lastPropertyName with
