@@ -135,15 +135,15 @@ type DeserializationError =
     /// <summary>
     /// A property that is required by definition is missing in the JSON
     /// </summary>
-    /// <param name="propertyName">The name of the property that is missing but required</param>
-    | RequiredPropertyMissing of propertyName: string
+    /// <param name="name">The name of the property that is missing but required</param>
+    | RequiredPropertyMissing of name: string
     /// <summary>
     /// A property that was encountered but is not known or handled
     /// </summary>
-    /// <param name="propertyName">The name of the unknown property</param>
+    /// <param name="name">The name of the unknown property</param>
     /// <param name="tokenType">The token type of the properties value to identify the data</param>
     /// <param name="value">The value of the property</param>
-    | UnexpectedProperty of propertyName: string * tokenType: JsonTokenType * value: object
+    | UnexpectedProperty of name: string * tokenType: JsonTokenType * value: object
     // Dont like the boxing here but the value should only be used for logging or displaying
     | UnexpectedValue of tokenType: JsonTokenType * value: object
     | OutOfBoundValue of tokenType: JsonTokenType * value: object * whereHint: string
