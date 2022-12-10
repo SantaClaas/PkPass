@@ -1,4 +1,4 @@
-﻿module PkPass.PassKit.Deserialization
+module PkPass.PassKit.Deserialization
 
 open System
 open System.Text
@@ -46,7 +46,7 @@ type PassDefinition =
       /// The value is <see cref="Option.None"/> if no value was provided.
       /// </summary>
       voided: bool option
-      
+
       // Visual appearance keys: Keys that define the visual style and appearance of the pass
       /// <summary>
       /// Optional background color of the pass
@@ -70,6 +70,11 @@ type PassDefinition =
       /// </summary>
       barcode: Barcode option
       barcodes: Barcode list option
+      /// <summary>
+      /// Recommended for event tickets and boarding passes; otherwise optional.
+      /// Date and time when the pass becomes relevant. For example, the start time of a movie.
+      /// The value must be a complete date with hours and minutes, and may optionally include seconds.
+      /// </summary>
       relevanceDate: DateTimeOffset option }
 
 type AttributedValue =
@@ -81,6 +86,7 @@ type FieldValue =
     | LocalizableString of LocalizableString
     | Date of DateTimeOffset
     | Number of int
+
     override this.ToString() =
         match this with
         | LocalizableString (LocalizableString.LocalizableString localizableString) -> localizableString
@@ -101,19 +107,34 @@ type TextAlignment =
     // Natural is default even though it is optional?
     | Natural
 
+module TextAlignment =
+    let tryParse =
+        function
+        | "PKTextAlignmentLeft" -> Some TextAlignment.Left
+        | "PKTextAlignmentCenter" -> Some TextAlignment.Center
+        | "PKTextAlignmentRight" -> Some TextAlignment.Right
+        | "PKTextAlignmentNatural" -> Some TextAlignment.Natural
+        | _ -> None
+
+let a =
+    [ "PKTextAlignmentLeft", "PKTextAlignmentCenter", "PKTextAlignmentRight", "PKTextAlignmentNatural" ]
+
 type Field =
     { attributedValue: AttributedValue option
       changeMessage: LocalizableFormatString option
       dataDetectorTypes: DataDetectorType list option
       key: string
       label: LocalizableString option
+      textAlignment: TextAlignment option
       value: FieldValue }
+
     static member Default key value =
         { attributedValue = None
           changeMessage = None
           dataDetectorTypes = None
           key = key
           value = value
+          textAlignment = None
           label = None }
 
 type private FieldDeserializationState =
@@ -122,13 +143,16 @@ type private FieldDeserializationState =
       dataDetectorTypes: DataDetectorType list option
       key: string option
       label: LocalizableString option
+      textAlignment: TextAlignment option
       value: FieldValue option }
+
     static member Default =
         { attributedValue = None
           changeMessage = None
           dataDetectorTypes = None
           key = None
           value = None
+          textAlignment = None
           label = None }
 
 type DeserializationError =
@@ -147,26 +171,29 @@ type DeserializationError =
     // Dont like the boxing here but the value should only be used for logging or displaying
     | UnexpectedValue of tokenType: JsonTokenType * value: object
     | OutOfBoundValue of tokenType: JsonTokenType * value: object * whereHint: string
-    | UnexpectedToken of tokenType: JsonTokenType * whereHint: string
+    | UnexpectedToken of tokenType: JsonTokenType * whereHint: string * lastPropertyName: string option
+    /// <summary>
+    /// An error when a value is invalid because it can only be one of the allowed values
+    /// </summary>
+    /// <param name="JsonTokenType">The type of the value</param>
+    /// <param name="allowedValues">The allowed values that the property can assume</param>
+    /// <param name="actualValue">The value that it actually was and is not in <see cref="allowedValues"/></param>
+    | InvalidValue of JsonTokenType: JsonTokenType * allowedValues: object array * actualValue: object
 
 let private tryFinishFieldDeserialization (state: FieldDeserializationState) : Result<Field, DeserializationError> =
     match state with
-    | { key = None } ->
-        nameof state.key
-        |> RequiredPropertyMissing
-        |> Error
-    | { value = None } ->
-        nameof state.key
-        |> RequiredPropertyMissing
-        |> Error
+    | { key = None } -> nameof state.key |> RequiredPropertyMissing |> Error
+    | { value = None } -> nameof state.key |> RequiredPropertyMissing |> Error
     | { key = Some key
         label = label
-        value = Some value } ->
+        value = Some value
+        textAlignment = textAlignment } ->
         { Field.key = key
           Field.label = label
           Field.value = value
           attributedValue = None
           changeMessage = None
+          textAlignment = textAlignment
           dataDetectorTypes = None }
         |> Ok
 
@@ -176,6 +203,7 @@ type PassStructure =
       headerFields: Field list option
       primaryFields: Field list option
       secondaryFields: Field list option }
+
     static member Default =
         { primaryFields = None
           auxiliaryFields = None
@@ -189,14 +217,17 @@ type TransitType =
     | Bus
     | Generic
     | Train
-// Boarding pass structure extends standard pass structure with a mandatory transit type
+
+/// <summary>
+/// Boarding pass structure extends standard pass structure (<see cref="PassStructure"/>) with a mandatory transit type
+/// </summary>
 type BoardingPassStructure = BoardingPassStructure of PassStructure * TransitType
 
 type Pass =
     | BoardingPass of PassDefinition * BoardingPassStructure
     | Coupon
     | EventTicket of PassDefinition * PassStructure
-    | Generic
+    | Generic of PassDefinition * PassStructure
     | StoredCard
 
 type private BarcodeDeserializationState =
@@ -204,6 +235,7 @@ type private BarcodeDeserializationState =
       format: BarcodeFormat option
       message: string option
       messageEncoding: Encoding option }
+
     static member Default =
         { alternateText = None
           format = None
@@ -212,26 +244,15 @@ type private BarcodeDeserializationState =
 
 let private tryFinishBarcodeDeserialization (state: BarcodeDeserializationState) =
     match state with
-    | { format = None } ->
-        nameof state.format
-        |> RequiredPropertyMissing
-        |> Error
-    | { message = None } ->
-        nameof state.message
-        |> RequiredPropertyMissing
-        |> Error
-    | { messageEncoding = None } ->
-        nameof state.messageEncoding
-        |> RequiredPropertyMissing
-        |> Error
+    | { format = None } -> nameof state.format |> RequiredPropertyMissing |> Error
+    | { message = None } -> nameof state.message |> RequiredPropertyMissing |> Error
+    | { messageEncoding = None } -> nameof state.messageEncoding |> RequiredPropertyMissing |> Error
     | { alternateText = alternateText
         format = Some format
         message = Some message
-        messageEncoding = Some messageEncoding } ->
-        Barcode(alternateText, format, message, messageEncoding)
-        |> Ok
+        messageEncoding = Some messageEncoding } -> Barcode(alternateText, format, message, messageEncoding) |> Ok
 
-let private handleUnexpected (reader: Utf8JsonReader byref) (propertyName: string option) =
+let private handleUnexpectedPropertyName (reader: Utf8JsonReader byref) (propertyName: string option) =
     let tokenType, value =
         match reader.TokenType with
         | JsonTokenType.String -> JsonTokenType.String, reader.GetString() |> box |> Some
@@ -274,19 +295,15 @@ let rec private deserializeBarcode
                 | "PKBarcodeFormatQR" -> deserializeBarcode &reader None { state with format = Some Qr }
                 | "PKBarcodeFormatPDF417" -> deserializeBarcode &reader None { state with format = Some Pdf417 }
                 | "PKBarcodeFormatAztec" -> deserializeBarcode &reader None { state with format = Some Aztec }
-                | otherFormat ->
-                    OutOfBoundValue(JsonTokenType.String, otherFormat, "barcodeFormat")
-                    |> Error
+                | otherFormat -> OutOfBoundValue(JsonTokenType.String, otherFormat, "barcodeFormat") |> Error
             | Some "message" -> deserializeBarcode &reader None { state with message = reader.GetString() |> Some }
             | Some "messageEncoding" ->
                 deserializeBarcode
                     &reader
                     None
                     { state with messageEncoding = reader.GetString() |> Encoding.GetEncoding |> Some }
-            | other -> handleUnexpected &reader other
-        | otherToken ->
-            UnexpectedToken(otherToken, nameof deserializeBarcode)
-            |> Error
+            | other -> handleUnexpectedPropertyName &reader other
+        | otherToken -> UnexpectedToken(otherToken, nameof deserializeBarcode, lastPropertyName) |> Error
 
 
 
@@ -308,14 +325,9 @@ let rec private deserializeField
                 deserializeField
                     &reader
                     None
-                    { state with
-                        label =
-                            reader.GetString()
-                            |> LocalizableString.LocalizableString
-                            |> Some }
+                    { state with label = reader.GetString() |> LocalizableString.LocalizableString |> Some }
             | Some "value" ->
-                let isDate, date =
-                    reader.TryGetDateTimeOffset()
+                let isDate, date = reader.TryGetDateTimeOffset()
 
                 if isDate then
                     let value = FieldValue.Date date
@@ -327,18 +339,32 @@ let rec private deserializeField
                         |> FieldValue.LocalizableString
 
                     deserializeField &reader None { state with value = Some value }
-            | other -> handleUnexpected &reader other
+            | Some "textAlignment" ->
+                let alignmentString = reader.GetString()
+
+                match TextAlignment.tryParse alignmentString with
+                | None ->
+                    DeserializationError.InvalidValue(
+                        JsonTokenType.String,
+                        [| "PKTextAlignmentLeft",
+                           "PKTextAlignmentCenter",
+                           "PKTextAlignmentRight",
+                           "PKTextAlignmentNatural" |],
+                        alignmentString
+                    )
+                    |> Error
+                | alignment -> deserializeField &reader None { state with textAlignment = alignment }
+
+
+            | other -> handleUnexpectedPropertyName &reader other
         | JsonTokenType.Number ->
             match lastPropertyName with
             | Some "value" ->
-                let value =
-                    reader.GetInt32() |> FieldValue.Number
+                let value = reader.GetInt32() |> FieldValue.Number
 
                 deserializeField &reader None { state with value = Some value }
-            | other -> handleUnexpected &reader other
-        | otherToken ->
-            UnexpectedToken(otherToken, nameof deserializeField)
-            |> Error
+            | other -> handleUnexpectedPropertyName &reader other
+        | otherToken -> UnexpectedToken(otherToken, nameof deserializeField, lastPropertyName) |> Error
 
 let rec private deserializeFields (reader: Utf8JsonReader byref) (resultFields: Field list) =
     if not <| reader.Read() then
@@ -350,9 +376,7 @@ let rec private deserializeFields (reader: Utf8JsonReader byref) (resultFields: 
             match deserializeField &reader None FieldDeserializationState.Default with
             | Ok field -> deserializeFields &reader (field :: resultFields)
             | Error error -> Error error
-        | otherToken ->
-            UnexpectedToken(otherToken, nameof deserializeBarcode)
-            |> Error
+        | otherToken -> UnexpectedToken(otherToken, nameof deserializeBarcode, None) |> Error
 
 let rec private deserializePassStructure
     (reader: Utf8JsonReader byref)
@@ -390,10 +414,9 @@ let rec private deserializePassStructure
                 match deserializeFields &reader [] with
                 | Ok fieldList -> deserializePassStructure &reader None { state with auxiliaryFields = Some fieldList }
                 | Error error -> Error error
-            | other -> handleUnexpected &reader other
+            | name -> handleUnexpectedPropertyName &reader name
         | otherToken ->
-            UnexpectedToken(otherToken, nameof deserializePassStructure)
-            |> Error
+            UnexpectedToken(otherToken, nameof deserializePassStructure, lastPropertyName) |> Error
 
 let rec private deserializeBarcodes (reader: Utf8JsonReader byref) (resultFields: Barcode list) =
     if not <| reader.Read() then
@@ -405,9 +428,7 @@ let rec private deserializeBarcodes (reader: Utf8JsonReader byref) (resultFields
             match deserializeBarcode &reader None BarcodeDeserializationState.Default with
             | Ok field -> deserializeBarcodes &reader (field :: resultFields)
             | Error error -> Error error
-        | otherToken ->
-            UnexpectedToken(otherToken, nameof deserializeBarcode)
-            |> Error
+        | otherToken -> UnexpectedToken(otherToken, nameof deserializeBarcode, None) |> Error
 
 /// <summary>
 /// Represents an unfinished collection of values that can be contained in a pass.
@@ -428,10 +449,18 @@ type PassDeserializationState =
       labelColor: CssColor option
       barcode: Barcode option
       barcodes: Barcode list option
-      // Construct pass decided what pass gets build from the definition and the structure in this record
-      constructPass: (PassDefinition -> Pass) option
+      /// <summary>
+      /// A function that decides what pass type gets finally created from the pass definition and creates it
+      /// </summary>
+      createPass: (PassDefinition -> Pass) option
+      /// <summary>
+      /// Recommended for event tickets and boarding passes; otherwise optional.
+      /// Date and time when the pass becomes relevant. For example, the start time of a movie.
+      /// The value must be a complete date with hours and minutes, and may optionally include seconds.
+      /// </summary>
       relevanceDate: DateTimeOffset option
       isPastRootStartObject: bool }
+
     static member Default =
         { description = None
           formatVersion = None
@@ -447,14 +476,14 @@ type PassDeserializationState =
           labelColor = None
           barcode = None
           barcodes = None
-          constructPass = None
+          createPass = None
           relevanceDate = None
           isPastRootStartObject = false }
 
 /// <summary>
 /// Tries to convert an "unstable" pass that is just a collection of the values that can appear to a type safe pass
 /// structure that has to fulfill the requirements of a pass. If not all requirements are fulfilled the function returns
-/// an error detailing what is missing or was wrong. 
+/// an error detailing what is missing or was wrong.
 /// </summary>
 /// <param name="state">
 /// The state representing all known properties with their values just that they are not guaranteed to exist
@@ -462,34 +491,13 @@ type PassDeserializationState =
 let private tryFinishPassDeserialization (state: PassDeserializationState) : Result<Pass, DeserializationError> =
     match state with
     // All the cases where a property was never added but is required
-    | { description = None } ->
-        nameof state.description
-        |> RequiredPropertyMissing
-        |> Error
-    | { formatVersion = None } ->
-        nameof state.formatVersion
-        |> RequiredPropertyMissing
-        |> Error
-    | { organizationName = None } ->
-        nameof state.organizationName
-        |> RequiredPropertyMissing
-        |> Error
-    | { passTypeIdentifier = None } ->
-        nameof state.passTypeIdentifier
-        |> RequiredPropertyMissing
-        |> Error
-    | { serialNumber = None } ->
-        nameof state.serialNumber
-        |> RequiredPropertyMissing
-        |> Error
-    | { teamIdentifier = None } ->
-        nameof state.teamIdentifier
-        |> RequiredPropertyMissing
-        |> Error
-    | { constructPass = None } ->
-        nameof state.constructPass
-        |> RequiredPropertyMissing
-        |> Error
+    | { description = None } -> nameof state.description |> RequiredPropertyMissing |> Error
+    | { formatVersion = None } -> nameof state.formatVersion |> RequiredPropertyMissing |> Error
+    | { organizationName = None } -> nameof state.organizationName |> RequiredPropertyMissing |> Error
+    | { passTypeIdentifier = None } -> nameof state.passTypeIdentifier |> RequiredPropertyMissing |> Error
+    | { serialNumber = None } -> nameof state.serialNumber |> RequiredPropertyMissing |> Error
+    | { teamIdentifier = None } -> nameof state.teamIdentifier |> RequiredPropertyMissing |> Error
+    | { createPass = None } -> nameof state.createPass |> RequiredPropertyMissing |> Error
     // Deconstruct valid unfinished pass definition and build valid one with it
     | { description = Some description
         formatVersion = Some formatVersion
@@ -505,7 +513,7 @@ let private tryFinishPassDeserialization (state: PassDeserializationState) : Res
         logoText = logoText
         barcode = barcode
         barcodes = barcodes
-        constructPass = Some constructPass
+        createPass = Some constructPass
         relevanceDate = relevanceDate } ->
         { description = description
           formatVersion = formatVersion
@@ -546,20 +554,12 @@ let rec deserializePass
                 deserializePass
                     &reader
                     None
-                    { state with
-                        description =
-                            reader.GetString()
-                            |> LocalizableString.LocalizableString
-                            |> Some }
+                    { state with description = reader.GetString() |> LocalizableString.LocalizableString |> Some }
             | Some "organizationName" ->
                 deserializePass
                     &reader
                     None
-                    { state with
-                        organizationName =
-                            reader.GetString()
-                            |> LocalizableString.LocalizableString
-                            |> Some }
+                    { state with organizationName = reader.GetString() |> LocalizableString.LocalizableString |> Some }
             | Some "passTypeIdentifier" ->
                 deserializePass &reader None { state with passTypeIdentifier = reader.GetString() |> Some }
             | Some "serialNumber" ->
@@ -569,28 +569,19 @@ let rec deserializePass
             | Some "relevantDate" ->
                 deserializePass &reader None { state with relevanceDate = reader.GetDateTimeOffset() |> Some }
             | Some "labelColor" ->
-                let labelColor =
-                    reader.GetString()
-                    |> Option.ofObj
-                    |> Option.map CssColor
-                    
+                let labelColor = reader.GetString() |> Option.ofObj |> Option.map CssColor
+
                 let newState = { state with labelColor = labelColor }
                 deserializePass &reader None newState
             | Some "backgroundColor" ->
                 // Might consolidate back- and foreground color code
-                let backgroundColor =
-                    reader.GetString()
-                    |> Option.ofObj
-                    |> Option.map CssColor
-                    
+                let backgroundColor = reader.GetString() |> Option.ofObj |> Option.map CssColor
+
                 let newState = { state with backgroundColor = backgroundColor }
                 deserializePass &reader None newState
             | Some "foregroundColor" ->
-                let foregroundColor =
-                    reader.GetString()
-                    |> Option.ofObj
-                    |> Option.map CssColor
-                    
+                let foregroundColor = reader.GetString() |> Option.ofObj |> Option.map CssColor
+
                 let newState = { state with foregroundColor = foregroundColor }
                 deserializePass &reader None newState
             | Some "logoText" ->
@@ -598,20 +589,20 @@ let rec deserializePass
                     reader.GetString()
                     |> Option.ofObj
                     |> Option.map LocalizableString.LocalizableString
-                
+
                 let newState = { state with logoText = logoText }
                 deserializePass &reader None newState
             | Some "expirationDate" ->
                 // Expiration date is optional
-                let expirationDate = reader.TryGetDateTimeOffset () |> Option.fromTry
+                let expirationDate = reader.TryGetDateTimeOffset() |> Option.fromTry
                 let newState = { state with expirationDate = expirationDate }
                 deserializePass &reader None newState
-            | other -> handleUnexpected &reader other
+            | other -> handleUnexpectedPropertyName &reader other
         | JsonTokenType.Number ->
             match lastPropertyName with
             | Some "formatVersion" ->
                 deserializePass &reader None { state with formatVersion = reader.GetInt32() |> Some }
-            | other -> handleUnexpected &reader other
+            | other -> handleUnexpectedPropertyName &reader other
         | JsonTokenType.StartObject ->
             match lastPropertyName with
             // When we start deserializing we need to advance once past the root object start
@@ -623,15 +614,23 @@ let rec deserializePass
                 // This maps Result<Barcode,TError> to Result<Pass.TError>. Is there a simpler way?
                 | Error error -> Error error
             | Some "eventTicket" ->
-                let structure =
-                    deserializePassStructure &reader None PassStructure.Default
-                // Would use option bind but cant because of reader byref :)
+                let structure = deserializePassStructure &reader None PassStructure.Default
+                // Would use Result.bind but cant because of reader byref :)
                 match structure with
                 | Ok structure ->
                     let transformer definition = EventTicket(definition, structure)
-                    deserializePass &reader None { state with constructPass = Some transformer }
+                    deserializePass &reader None { state with createPass = Some transformer }
                 | Error error -> Error error
-            | other -> handleUnexpected &reader other
+            | Some "generic" ->
+                let structure = deserializePassStructure &reader None PassStructure.Default
+                // Would use Result.bind but cant because of reader byref :)
+                match structure with
+                | Ok structure ->
+                    let transformer definition = Generic(definition, structure)
+                    deserializePass &reader None { state with createPass = Some transformer }
+                | Error error -> Error error
+
+            | other -> handleUnexpectedPropertyName &reader other
 
         | JsonTokenType.StartArray ->
             match lastPropertyName with
@@ -639,7 +638,5 @@ let rec deserializePass
                 match deserializeBarcodes &reader [] with
                 | Ok barcodeList -> deserializePass &reader None { state with barcodes = Some barcodeList }
                 | Error error -> Error error
-            | other -> handleUnexpected &reader other
-        | otherToken ->
-            UnexpectedToken(otherToken, nameof deserializePass)
-            |> Error
+            | other -> handleUnexpectedPropertyName &reader other
+        | otherToken -> UnexpectedToken(otherToken, nameof deserializePass, lastPropertyName) |> Error
