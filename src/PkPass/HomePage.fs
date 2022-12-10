@@ -56,9 +56,7 @@ module HomePage =
             let delete () = deleteCachedPassFile passName jsRuntime
             model, Cmd.OfTask.either delete () (fun _ -> LoadPasses) (UnknownError >> LogError)
         | AddUserSelectedFiles fileHandles ->
-            fileHandles
-            |> Array.length
-            |> printfn "Loaded %O files"
+            fileHandles |> Array.length |> printfn "Loaded %O files"
 
             model, Cmd.none
         | LogError (UnknownError ``exception``) ->
@@ -95,7 +93,11 @@ module HomePage =
             forEach loadResults (fun result ->
                 cond result (fun result ->
                     match result with
-                    | Error loadPassError -> p { "Sorry could not load that pass" }
+                    | Error loadPassError ->
+                        li {
+                            h2 { $"Sorry could not load that pass" }
+                            p { string loadPassError }
+                        }
                     | Ok passPackage ->
                         ecomp<PassPackageCard, _, _> passPackage (function
                             | PassPackageCardMessage.DeletePass passName ->
@@ -120,8 +122,7 @@ module HomePage =
 
                 // Button click has big side effect of requesting files from user and loading them into cache where
                 // we need to pick them up
-                ecomp<AddPassFloatingActionButton, _, _> () (fun _ ->
-                    dispatch HomePageMessage.LoadPasses) {
+                ecomp<AddPassFloatingActionButton, _, _> () (fun _ -> dispatch HomePageMessage.LoadPasses) {
                     attr.empty ()
                 }
             }
