@@ -5,7 +5,11 @@ open System.Text
 open System.Text.Json
 open PkPass
 open Resets
+open Extensions
 
+/// <summary>
+/// A string in the CSS style like "rgb(0,12,255)". Could be used in CSS variables.
+/// </summary>
 type CssColor = CssColor of string
 
 //TODO barcodes in the barcodes array are allowed to have type PKBarcodeFormatCode128 but not the single barcode
@@ -21,13 +25,36 @@ type LocalizableString = LocalizableString of string
 type LocalizableFormatString = LocalizableFormatString of string
 
 type PassDefinition =
-    { // Required values for all passes
+    { // Standard Keys: Required values for all passes
       description: LocalizableString
       formatVersion: int
       organizationName: LocalizableString
       passTypeIdentifier: string
       serialNumber: string
       teamIdentifier: string
+      // Expiration keys: Information about when a pass expires and whether it is still valid
+      // A pass is marked as expired if the current date is after the pass’s expiration date, or if the pass has been
+      // explicitly marked as voided
+      /// <summary>
+      /// Optional date and time when the pass expires. The value must be acomplete date with hours and minutes and may
+      /// optionally include seconds.
+      /// </summary>
+      expirationDate: DateTimeOffset option
+      /// <summary>
+      /// Optional indication that the pass is void. For example a one time coupon that has been redeemed. The default
+      /// value is false.
+      /// The value is <see cref="Option.None"/> if no value was provided.
+      /// </summary>
+      voided: bool option
+      
+      // Visual appearance keys: Keys that define the visual style and appearance of the pass
+      /// <summary>
+      /// Optional background color of the pass
+      /// </summary>
+      backgroundColor: CssColor option
+      /// <summary>
+      /// Optional foreground color of the pass
+      /// </summary>
       foregroundColor: CssColor option
       /// <summary>
       /// Optional color of the labeled text, specified as a CSS-style RGB triple. For example, rgb(255, 255, 255).
@@ -105,8 +132,17 @@ type private FieldDeserializationState =
           label = None }
 
 type DeserializationError =
-    // A property that is required by definition is missing in the JSON
+    /// <summary>
+    /// A property that is required by definition is missing in the JSON
+    /// </summary>
+    /// <param name="propertyName">The name of the property that is missing but required</param>
     | RequiredPropertyMissing of propertyName: string
+    /// <summary>
+    /// A property that was encountered but is not known or handled
+    /// </summary>
+    /// <param name="propertyName">The name of the unknown property</param>
+    /// <param name="tokenType">The token type of the properties value to identify the data</param>
+    /// <param name="value">The value of the property</param>
     | UnexpectedProperty of propertyName: string * tokenType: JsonTokenType * value: object
     // Dont like the boxing here but the value should only be used for logging or displaying
     | UnexpectedValue of tokenType: JsonTokenType * value: object
@@ -373,6 +409,10 @@ let rec private deserializeBarcodes (reader: Utf8JsonReader byref) (resultFields
             UnexpectedToken(otherToken, nameof deserializeBarcode)
             |> Error
 
+/// <summary>
+/// Represents an unfinished collection of values that can be contained in a pass.
+/// This represents the pass before it ran through validation
+/// </summary>
 type PassDeserializationState =
     { description: LocalizableString option
       formatVersion: int option
@@ -380,6 +420,9 @@ type PassDeserializationState =
       organizationName: LocalizableString option
       passTypeIdentifier: string option
       teamIdentifier: string option
+      expirationDate: DateTimeOffset option
+      voided: bool option
+      backgroundColor: CssColor option
       foregroundColor: CssColor option
       logoText: LocalizableString option
       labelColor: CssColor option
@@ -396,6 +439,9 @@ type PassDeserializationState =
           organizationName = None
           passTypeIdentifier = None
           teamIdentifier = None
+          expirationDate = None
+          voided = None
+          backgroundColor = None
           foregroundColor = None
           logoText = None
           labelColor = None
@@ -451,6 +497,9 @@ let private tryFinishPassDeserialization (state: PassDeserializationState) : Res
         passTypeIdentifier = Some passTypeIdentifier
         serialNumber = Some serialNumber
         teamIdentifier = Some teamIdentifier
+        expirationDate = expirationDate
+        voided = voided
+        backgroundColor = backgroundColor
         foregroundColor = foregroundColor
         labelColor = labelColor
         logoText = logoText
@@ -464,6 +513,9 @@ let private tryFinishPassDeserialization (state: PassDeserializationState) : Res
           organizationName = organizationName
           passTypeIdentifier = passTypeIdentifier
           teamIdentifier = teamIdentifier
+          expirationDate = expirationDate
+          voided = voided
+          backgroundColor = backgroundColor
           foregroundColor = foregroundColor
           labelColor = labelColor
           logoText = logoText
@@ -524,6 +576,15 @@ let rec deserializePass
                     
                 let newState = { state with labelColor = labelColor }
                 deserializePass &reader None newState
+            | Some "backgroundColor" ->
+                // Might consolidate back- and foreground color code
+                let backgroundColor =
+                    reader.GetString()
+                    |> Option.ofObj
+                    |> Option.map CssColor
+                    
+                let newState = { state with backgroundColor = backgroundColor }
+                deserializePass &reader None newState
             | Some "foregroundColor" ->
                 let foregroundColor =
                     reader.GetString()
@@ -539,6 +600,11 @@ let rec deserializePass
                     |> Option.map LocalizableString.LocalizableString
                 
                 let newState = { state with logoText = logoText }
+                deserializePass &reader None newState
+            | Some "expirationDate" ->
+                // Expiration date is optional
+                let expirationDate = reader.TryGetDateTimeOffset () |> Option.fromTry
+                let newState = { state with expirationDate = expirationDate }
                 deserializePass &reader None newState
             | other -> handleUnexpected &reader other
         | JsonTokenType.Number ->
