@@ -11,8 +11,10 @@ open Microsoft.JSInterop
 open PkPass.Interop
 open PkPass.Extensions
 open PkPass.PassKit.Deserialization
+open PkPass.PassKit.Errors
 open PkPass.PassKit.Images
 open PkPass.PassKit.Package
+open PkPass.PassKit.PassStructure
 open PkPass.PassKit.Package.Images
 
 type RequiredImageMissingError = RequiredImageMissingError of imageName: string

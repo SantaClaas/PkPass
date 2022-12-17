@@ -10,6 +10,8 @@ open Microsoft.JSInterop
 open PkPass.PassKit.Deserialization
 open PkPass.PassKit.Images
 open PkPass.PassKit.Package
+open PkPass.PassKit.Field
+open PkPass.PassKit.PassStructure
 open PkPass.Events
 open PkPass.Events.Html
 

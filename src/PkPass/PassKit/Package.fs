@@ -7,6 +7,7 @@ open System.Net
 open System.Text.Json
 open Microsoft.FSharp.Core
 open PkPass.PassKit.Deserialization
+open PkPass.PassKit.Errors
 open PkPass.PassKit.Images
 
 //TODO make package hold the zip archive instead of the location to avoid opening it for every operation
@@ -41,7 +42,7 @@ let getPass (package: PassPackageData) =
     |> getFileFromPackage "pass.json"
     |> Option.map (fun data ->
         let mutable reader = Utf8JsonReader data
-        deserializePass &reader None PassDeserializationState.Default)
+        deserializePass &reader)
     
 
 /// <summary>

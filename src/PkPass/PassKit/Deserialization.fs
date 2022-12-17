@@ -4,25 +4,16 @@ open System
 open System.Text
 open System.Text.Json
 open PkPass
-open Resets
+open PkPass.PassKit.Errors
+open PkPass.PassKit.Field
+open PkPass.PassKit.PassStructure
+open PkPass.PassKit.Barcode
 open Extensions
 
 /// <summary>
 /// A string in the CSS style like "rgb(0,12,255)". Could be used in CSS variables.
 /// </summary>
 type CssColor = CssColor of string
-
-//TODO barcodes in the barcodes array are allowed to have type PKBarcodeFormatCode128 but not the single barcode
-type BarcodeFormat =
-    | Qr
-    | Pdf417
-    | Aztec
-
-type Barcode =
-    | Barcode of alternateText: string option * format: BarcodeFormat * message: string * messageEncoding: Encoding
-
-type LocalizableString = LocalizableString of string
-type LocalizableFormatString = LocalizableFormatString of string
 
 type PassDefinition =
     { // Standard Keys: Required values for all passes
@@ -77,145 +68,6 @@ type PassDefinition =
       /// </summary>
       relevanceDate: DateTimeOffset option }
 
-type AttributedValue =
-    | HtmlAnchorTag of href: string * label: string
-    | Date of DateTimeOffset
-    | Number of int
-
-type FieldValue =
-    | LocalizableString of LocalizableString
-    | Date of DateTimeOffset
-    | Number of int
-
-    override this.ToString() =
-        match this with
-        | LocalizableString (LocalizableString.LocalizableString localizableString) -> localizableString
-        | Date date -> date.ToString()
-        | Number number -> number.ToString()
-
-type DataDetectorType =
-    | PhoneNumber
-    | Link
-    | Address
-    | CalendarEvent
-
-//TODO not allowed for primary fields or back fields
-type TextAlignment =
-    | Left
-    | Center
-    | Right
-    // Natural is default even though it is optional?
-    | Natural
-
-module TextAlignment =
-    let tryParse =
-        function
-        | "PKTextAlignmentLeft" -> Some TextAlignment.Left
-        | "PKTextAlignmentCenter" -> Some TextAlignment.Center
-        | "PKTextAlignmentRight" -> Some TextAlignment.Right
-        | "PKTextAlignmentNatural" -> Some TextAlignment.Natural
-        | _ -> None
-
-type Field =
-    { attributedValue: AttributedValue option
-      changeMessage: LocalizableFormatString option
-      dataDetectorTypes: DataDetectorType list option
-      key: string
-      label: LocalizableString option
-      textAlignment: TextAlignment option
-      value: FieldValue }
-
-    static member Default key value =
-        { attributedValue = None
-          changeMessage = None
-          dataDetectorTypes = None
-          key = key
-          value = value
-          textAlignment = None
-          label = None }
-
-type private FieldDeserializationState =
-    { attributedValue: AttributedValue option
-      changeMessage: LocalizableFormatString option
-      dataDetectorTypes: DataDetectorType list option
-      key: string option
-      label: LocalizableString option
-      textAlignment: TextAlignment option
-      value: FieldValue option }
-
-    static member Default =
-        { attributedValue = None
-          changeMessage = None
-          dataDetectorTypes = None
-          key = None
-          value = None
-          textAlignment = None
-          label = None }
-
-type DeserializationError =
-    /// <summary>
-    /// A property that is required by definition is missing in the JSON
-    /// </summary>
-    /// <param name="name">The name of the property that is missing but required</param>
-    | RequiredPropertyMissing of name: string
-    /// <summary>
-    /// A property that was encountered but is not known or handled
-    /// </summary>
-    /// <param name="name">The name of the unknown property</param>
-    /// <param name="tokenType">The token type of the properties value to identify the data</param>
-    /// <param name="value">The value of the property</param>
-    | UnexpectedProperty of name: string * tokenType: JsonTokenType * value: object
-    // Dont like the boxing here but the value should only be used for logging or displaying
-    | UnexpectedValue of tokenType: JsonTokenType * value: object
-    | OutOfBoundValue of tokenType: JsonTokenType * value: object * whereHint: string
-    | UnexpectedToken of tokenType: JsonTokenType * whereHint: string * lastPropertyName: string option
-    /// <summary>
-    /// An error when a value is invalid because it can only be one of the allowed values
-    /// </summary>
-    /// <param name="JsonTokenType">The type of the value</param>
-    /// <param name="allowedValues">The allowed values that the property can assume</param>
-    /// <param name="actualValue">The value that it actually was and is not in <see cref="allowedValues"/></param>
-    | InvalidValue of JsonTokenType: JsonTokenType * allowedValues: object array * actualValue: object
-
-let private tryFinishFieldDeserialization (state: FieldDeserializationState) : Result<Field, DeserializationError> =
-    match state with
-    | { key = None } -> nameof state.key |> RequiredPropertyMissing |> Error
-    | { value = None } -> nameof state.key |> RequiredPropertyMissing |> Error
-    | { key = Some key
-        label = label
-        value = Some value
-        textAlignment = textAlignment } ->
-        { Field.key = key
-          Field.label = label
-          Field.value = value
-          attributedValue = None
-          changeMessage = None
-          textAlignment = textAlignment
-          dataDetectorTypes = None }
-        |> Ok
-
-type PassStructure =
-    { auxiliaryFields: Field list option
-      backFields: Field list option
-      headerFields: Field list option
-      primaryFields: Field list option
-      secondaryFields: Field list option }
-
-    static member Default =
-        { primaryFields = None
-          auxiliaryFields = None
-          headerFields = None
-          secondaryFields = None
-          backFields = None }
-
-type PassStructureDeserializationState =
-    { passStructure: PassStructure
-      errors: DeserializationError list }
-
-    static member Default =
-        { passStructure = PassStructure.Default
-          errors = [] }
-
 type TransitType =
     | Air
     | Boat
@@ -241,272 +93,11 @@ type PassStyle =
     | Generic of GenericPass
     | StoreCard of StoreCard
 
-type private BarcodeDeserializationState =
-    { alternateText: string option
-      format: BarcodeFormat option
-      message: string option
-      messageEncoding: Encoding option }
-
-    static member Default =
-        { alternateText = None
-          format = None
-          message = None
-          messageEncoding = None }
-
-
-/// <summary>
-/// Describes the result of a pass deserialization
-/// </summary>
-type DeserializationResult<'T> =
-    /// <summary>
-    /// The deserialization of the pass ran without issues and the structure is valid according to requirements
-    /// </summary>
-    | Ok of 'T
-    /// <summary>
-    /// The deserialization encountered one or more errors but could recover and return a possibly incorrect pass.
-    /// There might be issues with the pass that lead to a reduced user experience
-    /// </summary>
-    /// <param name="errors">A list of errors that occured and might cause the pass to appear incorrect</param>
-    | Recovered of 'T * errors: DeserializationError list
-    /// <summary>
-    /// The deserialization failed because there was an unrecoverable error while deserialization like invalid JSON.
-    /// Big bad.
-    /// </summary>
-    | Failed of DeserializationError
-
-let private tryFinishBarcodeDeserialization (state: BarcodeDeserializationState) =
-    match state with
-    | { format = None } -> nameof state.format |> RequiredPropertyMissing |> Error
-    | { message = None } -> nameof state.message |> RequiredPropertyMissing |> Error
-    | { messageEncoding = None } -> nameof state.messageEncoding |> RequiredPropertyMissing |> Error
-    | { alternateText = alternateText
-        format = Some format
-        message = Some message
-        messageEncoding = Some messageEncoding } ->
-        Barcode(alternateText, format, message, messageEncoding) |> Result.Ok
-
-let private handleInvalidProperty (reader: Utf8JsonReader byref) (propertyName: string option) =
-    let tokenType, value =
-        match reader.TokenType with
-        | JsonTokenType.String -> JsonTokenType.String, reader.GetString() |> box |> Some
-        | JsonTokenType.Number -> JsonTokenType.Number, reader.GetInt32() |> box |> Some
-        | JsonTokenType.StartObject ->
-            // Continue and ignore object content until object is closed
-            while reader.Read() && reader.TokenType <> JsonTokenType.EndObject do
-                ()
-
-            JsonTokenType.StartObject, None
-        | JsonTokenType.EndObject -> JsonTokenType.EndObject, None
-        | JsonTokenType.Comment -> JsonTokenType.Comment, reader.GetString() |> box |> Some
-        | JsonTokenType.None -> JsonTokenType.None, None
-        | JsonTokenType.StartArray ->
-            // Continue and ignore object content until object is closed
-            while reader.Read() && reader.TokenType <> JsonTokenType.EndArray do
-                ()
-
-            JsonTokenType.StartArray, None
-        | JsonTokenType.EndArray -> JsonTokenType.EndArray, None
-        | JsonTokenType.PropertyName -> JsonTokenType.PropertyName, reader.GetString() |> box |> Some
-        | JsonTokenType.True -> JsonTokenType.True, reader.GetBoolean() |> box |> Some
-        | JsonTokenType.False -> JsonTokenType.False, reader.GetBoolean() |> box |> Some
-        | JsonTokenType.Null -> JsonTokenType.Null, None
-        | outsideEnumValue -> outsideEnumValue, None
-
-    match propertyName with
-    | Some property -> UnexpectedProperty(property, tokenType, value)
-    | None -> UnexpectedValue(tokenType, value)
-
-let rec private deserializeBarcode
-    (reader: Utf8JsonReader byref)
-    (lastPropertyName: string option)
-    (state: BarcodeDeserializationState)
-    =
-    if not <| reader.Read() then
-        tryFinishBarcodeDeserialization state
-    else
-        match reader.TokenType with
-        | JsonTokenType.EndObject -> tryFinishBarcodeDeserialization state
-        | JsonTokenType.PropertyName -> deserializeBarcode &reader (reader.GetString() |> Some) state
-        | JsonTokenType.String ->
-            match lastPropertyName with
-            | Some "altText" ->
-                deserializeBarcode &reader None { state with alternateText = reader.GetString() |> Some }
-            | Some "format" ->
-
-                match reader.GetString() with
-                | "PKBarcodeFormatQR" -> deserializeBarcode &reader None { state with format = Some Qr }
-                | "PKBarcodeFormatPDF417" -> deserializeBarcode &reader None { state with format = Some Pdf417 }
-                | "PKBarcodeFormatAztec" -> deserializeBarcode &reader None { state with format = Some Aztec }
-                | otherFormat -> OutOfBoundValue(JsonTokenType.String, otherFormat, "barcodeFormat") |> Error
-            | Some "message" -> deserializeBarcode &reader None { state with message = reader.GetString() |> Some }
-            | Some "messageEncoding" ->
-                deserializeBarcode
-                    &reader
-                    None
-                    { state with messageEncoding = reader.GetString() |> Encoding.GetEncoding |> Some }
-            | other -> handleInvalidProperty &reader other |> Error
-        | otherToken ->
-            UnexpectedToken(otherToken, nameof deserializeBarcode, lastPropertyName)
-            |> Error
-
-let rec private deserializeField
-    (reader: Utf8JsonReader byref)
-    (lastPropertyName: string option)
-    (state: FieldDeserializationState)
-    =
-    if not <| reader.Read() then
-        state |> tryFinishFieldDeserialization
-    else
-        match reader.TokenType with
-        | JsonTokenType.EndObject -> state |> tryFinishFieldDeserialization
-        | JsonTokenType.PropertyName -> deserializeField &reader (reader.GetString() |> Some) state
-        | JsonTokenType.String ->
-            match lastPropertyName with
-            | Some "key" -> deserializeField &reader None { state with key = reader.GetString() |> Some }
-            | Some "label" ->
-                deserializeField
-                    &reader
-                    None
-                    { state with label = reader.GetString() |> LocalizableString.LocalizableString |> Some }
-            | Some "value" ->
-                let isDate, date = reader.TryGetDateTimeOffset()
-
-                if isDate then
-                    let value = FieldValue.Date date
-                    deserializeField &reader None { state with value = Some value }
-                else
-                    let value =
-                        reader.GetString()
-                        |> LocalizableString.LocalizableString
-                        |> FieldValue.LocalizableString
-
-                    deserializeField &reader None { state with value = Some value }
-            | Some "textAlignment" ->
-                let alignmentString = reader.GetString()
-
-                match TextAlignment.tryParse alignmentString with
-                | None ->
-                    DeserializationError.InvalidValue(
-                        JsonTokenType.String,
-                        [| "PKTextAlignmentLeft",
-                           "PKTextAlignmentCenter",
-                           "PKTextAlignmentRight",
-                           "PKTextAlignmentNatural" |],
-                        alignmentString
-                    )
-                    |> Error
-                | alignment -> deserializeField &reader None { state with textAlignment = alignment }
-
-
-            | other -> handleInvalidProperty &reader other |> Error
-        | JsonTokenType.Number ->
-            match lastPropertyName with
-            | Some "value" ->
-                let value = reader.GetInt32() |> FieldValue.Number
-
-                deserializeField &reader None { state with value = Some value }
-            | other -> handleInvalidProperty &reader other |> Error
-        | otherToken -> UnexpectedToken(otherToken, nameof deserializeField, lastPropertyName) |> Error
-
-let rec private deserializeFields (reader: Utf8JsonReader byref) (resultFields: Field list) =
-    if not <| reader.Read() then
-        Result.Ok resultFields
-    else
-        match reader.TokenType with
-        | JsonTokenType.EndArray -> Result.Ok resultFields
-        | JsonTokenType.StartObject ->
-            match deserializeField &reader None FieldDeserializationState.Default with
-            | Result.Ok field -> deserializeFields &reader (field :: resultFields)
-            | Error error -> Error error
-        | otherToken -> UnexpectedToken(otherToken, nameof deserializeBarcode, None) |> Error
-
-let completePassStructureDeserialization state =
-    match state with
-    | { errors = []
-        passStructure = passStructure } -> DeserializationResult.Ok passStructure
-    | _ -> DeserializationResult.Recovered(state.passStructure, state.errors)
-
-let rec private deserializePassStructure
-    (reader: Utf8JsonReader byref)
-    (lastPropertyName: string option)
-    (state: PassStructureDeserializationState)
-    =
-    if not <| reader.Read() then
-        completePassStructureDeserialization state
-    else
-        match reader.TokenType with
-        | JsonTokenType.EndObject -> completePassStructureDeserialization state
-        | JsonTokenType.PropertyName -> deserializePassStructure &reader (reader.GetString() |> Some) state
-        | JsonTokenType.StartArray ->
-            // I feel like I can reduce duplicate code here because the only thing that differs between cases is applying the result
-            // to the state
-            match lastPropertyName with
-            // Assume if it has the property it has to have a value
-            | Some "headerFields" ->
-                match deserializeFields &reader [] with
-                | Result.Ok fieldList ->
-                    let newPassStructure = { state.passStructure with headerFields = Some fieldList }
-                    let newState = { state with passStructure = newPassStructure }
-                    deserializePassStructure &reader None newState
-                | Error error -> DeserializationResult.Failed error
-            | Some "primaryFields" ->
-                match deserializeFields &reader [] with
-                | Result.Ok fieldList ->
-                    let newPassStructure = { state.passStructure with primaryFields = Some fieldList }
-                    let newState = { state with passStructure = newPassStructure }
-                    deserializePassStructure &reader None newState
-                | Error error -> DeserializationResult.Failed error
-            | Some "secondaryFields" ->
-                match deserializeFields &reader [] with
-                | Result.Ok fieldList ->
-                    let newPassStructure = { state.passStructure with secondaryFields = Some fieldList }
-                    let newState = { state with passStructure = newPassStructure }
-                    deserializePassStructure &reader None newState
-                | Error error -> DeserializationResult.Failed error
-            | Some "backFields" ->
-                match deserializeFields &reader [] with
-                | Result.Ok fieldList ->
-                    let newPassStructure = { state.passStructure with backFields = Some fieldList }
-                    let newState = { state with passStructure = newPassStructure }
-                    deserializePassStructure &reader None newState
-                | Error error -> DeserializationResult.Failed error
-            | Some "auxiliaryFields" ->
-                match deserializeFields &reader [] with
-                | Result.Ok fieldList ->
-                    let newPassStructure = { state.passStructure with auxiliaryFields = Some fieldList }
-                    let newState = { state with passStructure = newPassStructure }
-                    deserializePassStructure &reader None newState
-                | Error error -> DeserializationResult.Failed error
-            | name ->
-                let error = handleInvalidProperty &reader name
-                let newState = { state with errors = error :: state.errors }
-                deserializePassStructure &reader None newState
-
-        | otherToken ->
-            let error =
-                UnexpectedToken(otherToken, nameof deserializePassStructure, lastPropertyName)
-
-            let newState = { state with errors = error :: state.errors }
-            deserializePassStructure &reader None newState
-
-
-let rec private deserializeBarcodes (reader: Utf8JsonReader byref) (resultFields: Barcode list) =
-    if not <| reader.Read() then
-        Result.Ok resultFields
-    else
-        match reader.TokenType with
-        | JsonTokenType.EndArray -> Result.Ok resultFields
-        | JsonTokenType.StartObject ->
-            match deserializeBarcode &reader None BarcodeDeserializationState.Default with
-            | Result.Ok field -> deserializeBarcodes &reader (field :: resultFields)
-            | Error error -> Error error
-        | otherToken -> UnexpectedToken(otherToken, nameof deserializeBarcode, None) |> Error
-
 /// <summary>
 /// Represents an unfinished collection of values that can be contained in a pass.
 /// This represents the pass before it ran through validation
 /// </summary>
-type PassDeserializationState =
+type private PassDeserializationState =
     { description: LocalizableString option
       formatVersion: int option
       serialNumber: string option
@@ -633,7 +224,7 @@ let private tryFinishPassDeserialization (state: PassDeserializationState) : Pas
         |> DeserializationResult.Ok
 
 
-let rec deserializePass
+let rec private deserializePassInternal
     (reader: Utf8JsonReader byref)
     (lastPropertyName: string option)
     (state: PassDeserializationState)
@@ -645,44 +236,44 @@ let rec deserializePass
         match reader.TokenType with
         // Exit
         | JsonTokenType.EndObject -> tryFinishPassDeserialization state
-        | JsonTokenType.PropertyName -> deserializePass &reader (reader.GetString() |> Some) state
+        | JsonTokenType.PropertyName -> deserializePassInternal &reader (reader.GetString() |> Some) state
         | JsonTokenType.String ->
             // Pass none as last property name to last property name
             match lastPropertyName with
             | Some "description" ->
-                deserializePass
+                deserializePassInternal
                     &reader
                     None
                     { state with description = reader.GetString() |> LocalizableString.LocalizableString |> Some }
             | Some "organizationName" ->
-                deserializePass
+                deserializePassInternal
                     &reader
                     None
                     { state with organizationName = reader.GetString() |> LocalizableString.LocalizableString |> Some }
             | Some "passTypeIdentifier" ->
-                deserializePass &reader None { state with passTypeIdentifier = reader.GetString() |> Some }
+                deserializePassInternal &reader None { state with passTypeIdentifier = reader.GetString() |> Some }
             | Some "serialNumber" ->
-                deserializePass &reader None { state with serialNumber = reader.GetString() |> Some }
+                deserializePassInternal &reader None { state with serialNumber = reader.GetString() |> Some }
             | Some "teamIdentifier" ->
-                deserializePass &reader None { state with teamIdentifier = reader.GetString() |> Some }
+                deserializePassInternal &reader None { state with teamIdentifier = reader.GetString() |> Some }
             | Some "relevantDate" ->
-                deserializePass &reader None { state with relevanceDate = reader.GetDateTimeOffset() |> Some }
+                deserializePassInternal &reader None { state with relevanceDate = reader.GetDateTimeOffset() |> Some }
             | Some "labelColor" ->
                 let labelColor = reader.GetString() |> Option.ofObj |> Option.map CssColor
 
                 let newState = { state with labelColor = labelColor }
-                deserializePass &reader None newState
+                deserializePassInternal &reader None newState
             | Some "backgroundColor" ->
                 // Might consolidate back- and foreground color code
                 let backgroundColor = reader.GetString() |> Option.ofObj |> Option.map CssColor
 
                 let newState = { state with backgroundColor = backgroundColor }
-                deserializePass &reader None newState
+                deserializePassInternal &reader None newState
             | Some "foregroundColor" ->
                 let foregroundColor = reader.GetString() |> Option.ofObj |> Option.map CssColor
 
                 let newState = { state with foregroundColor = foregroundColor }
-                deserializePass &reader None newState
+                deserializePassInternal &reader None newState
             | Some "logoText" ->
                 let logoText =
                     reader.GetString()
@@ -690,70 +281,72 @@ let rec deserializePass
                     |> Option.map LocalizableString.LocalizableString
 
                 let newState = { state with logoText = logoText }
-                deserializePass &reader None newState
+                deserializePassInternal &reader None newState
             | Some "expirationDate" ->
                 // Expiration date is optional
                 let expirationDate = reader.TryGetDateTimeOffset() |> Option.fromTry
                 let newState = { state with expirationDate = expirationDate }
-                deserializePass &reader None newState
+                deserializePassInternal &reader None newState
             | other ->
                 let error = handleInvalidProperty &reader other
-                deserializePass &reader None { state with errors = error :: state.errors }
+                deserializePassInternal &reader None { state with errors = error :: state.errors }
         | JsonTokenType.Number ->
             match lastPropertyName with
             | Some "formatVersion" ->
-                deserializePass &reader None { state with formatVersion = reader.GetInt32() |> Some }
+                deserializePassInternal &reader None { state with formatVersion = reader.GetInt32() |> Some }
             | other ->
                 let error = handleInvalidProperty &reader other
-                deserializePass &reader None { state with errors = error :: state.errors }
+                deserializePassInternal &reader None { state with errors = error :: state.errors }
         | JsonTokenType.StartObject ->
             match lastPropertyName with
             // When we start deserializing we need to advance once past the root object start
             | _ when not state.isPastRootStartObject ->
-                deserializePass &reader None { state with isPastRootStartObject = true }
+                deserializePassInternal &reader None { state with isPastRootStartObject = true }
             | Some "barcode" ->
-                match deserializeBarcode &reader None BarcodeDeserializationState.Default with
-                | Result.Ok barcode -> deserializePass &reader None { state with barcode = Some barcode }
+                match deserializeBarcode &reader with
+                | Result.Ok barcode -> deserializePassInternal &reader None { state with barcode = Some barcode }
                 // This maps Result<Barcode,TError> to Result<Pass.TError>. Is there a simpler way?
                 | Error error -> Failed error
             | Some "eventTicket" ->
                 // Would use Result.bind but cant because of reader byref :)
                 let result =
-                    deserializePassStructure &reader None PassStructureDeserializationState.Default
+                    deserializePassStructure &reader
 
                 match result with
                 | DeserializationResult.Ok structure ->
                     let transformer definition = EventTicket(definition, structure) |> PassStyle.EventTicket
-                    deserializePass &reader None { state with createPass = Some transformer }
+                    deserializePassInternal &reader None { state with createPass = Some transformer }
                 | Recovered (structure, errors) ->
                     let transformer definition = EventTicket(definition, structure) |> PassStyle.EventTicket
                     let newState = { state with errors = state.errors @ errors; createPass = Some transformer }
-                    deserializePass &reader None newState
+                    deserializePassInternal &reader None newState
                 | Failed error -> Failed error
             | Some "generic" ->
                 let result =
-                    deserializePassStructure &reader None PassStructureDeserializationState.Default
+                    deserializePassStructure &reader
 
                 match result with
                 | DeserializationResult.Ok structure ->
                     let transformer definition = GenericPass(definition, structure) |> PassStyle.Generic
-                    deserializePass &reader None { state with createPass = Some transformer }
+                    deserializePassInternal &reader None { state with createPass = Some transformer }
                 | Recovered (structure, errors) ->
                     let transformer definition = GenericPass(definition, structure) |> PassStyle.Generic
                     let newState = { state with errors = state.errors @ errors ; createPass = Some transformer}
-                    deserializePass &reader None newState
+                    deserializePassInternal &reader None newState
                 | Failed error -> Failed error
             | other ->
                 let error = handleInvalidProperty &reader other
-                deserializePass &reader None { state with errors = error :: state.errors }
+                deserializePassInternal &reader None { state with errors = error :: state.errors }
 
         | JsonTokenType.StartArray ->
             match lastPropertyName with
             | Some "barcodes" ->
-                match deserializeBarcodes &reader [] with
-                | Result.Ok barcodeList -> deserializePass &reader None { state with barcodes = Some barcodeList }
+                match deserializeBarcodes &reader with
+                | Result.Ok barcodeList -> deserializePassInternal &reader None { state with barcodes = Some barcodeList }
                 | Error error -> Failed error
             | other ->
                 let error = handleInvalidProperty &reader other
-                deserializePass &reader None { state with errors = error :: state.errors }
-        | otherToken -> UnexpectedToken(otherToken, nameof deserializePass, lastPropertyName) |> Failed
+                deserializePassInternal &reader None { state with errors = error :: state.errors }
+        | otherToken -> UnexpectedToken(otherToken, nameof deserializePassInternal, lastPropertyName) |> Failed
+
+let deserializePass (reader: Utf8JsonReader byref) = deserializePassInternal &reader None PassDeserializationState.Default

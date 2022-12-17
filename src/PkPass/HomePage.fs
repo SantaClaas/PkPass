@@ -9,7 +9,7 @@ open Microsoft.JSInterop
 open PkPass.Interop
 open PkPass.LoadPass
 open PkPass.Components
-open PkPass.PassKit.Deserialization
+open PkPass.PassKit.Field
 open PkPass.PassKit.Package
 // Home page can be displaying loaded passes or it is currently loading passes
 type HomePageState =
