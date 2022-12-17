@@ -8,6 +8,7 @@ open Bolero.Html.attr
 open Microsoft.AspNetCore.Components
 open Microsoft.JSInterop
 open PkPass.PassKit.Deserialization
+open PkPass.PassKit.Images
 open PkPass.PassKit.Package
 open PkPass.Events
 open PkPass.Events.Html
@@ -23,11 +24,19 @@ type PassPackageCard() =
     let createPngDataUrl base64String = $"data:image/png;base64,{base64String}"
     let renderPassThumbnail thumbnail =
         match thumbnail with
-        | PassThumbnail (Image.Base64 base64String) ->
+        | Thumbnail (Image.Base64 base64String) ->
             img {
                 attr.``class`` "w-20 rounded-lg"
                 base64String |> createPngDataUrl |> attr.src
             }
+    let renderPassImages images =
+        cond images (fun images ->
+            match images with
+            | EventTicketImages(common, eventImageOption) ->
+                cond eventImageOption (fun eventImageOption ->
+                    match eventImageOption with
+                    | EventTicketImageOption.StripImage _ -> p { "Strip image is not yet supported. I'm working on it" }
+                    | EventTicketImageOption.Other(background, thumbnail) -> renderPassThumbnail thumbnail ))
 
     let renderPrimaryField (field: Field) (headerFields : Field list option) =
         cond field.label (fun label ->
@@ -51,7 +60,7 @@ type PassPackageCard() =
                 }
             | _ -> Html.empty ())
 
-    let renderEventTicket passStructure package dispatch =
+    let renderEventTicket passStructure fileName images dispatch =
         li {
             attr.``class`` "bg-white/5 rounded-xl overflow-hidden"
             
@@ -72,7 +81,7 @@ type PassPackageCard() =
                     
                     div {
                         attr.``class`` "flex gap-3 justify-between"
-                        renderPassThumbnail package.thumbnail
+                        renderPassImages images
                         
                         div {
                             attr.``class`` "flex flex-col justify-between"
@@ -123,7 +132,7 @@ type PassPackageCard() =
                     attr.``class`` $"{swipeActionStyles} snap-center bg-red-500"
                     on.intersect (fun arguments -> 
                         if arguments.IsIntersecting then
-                            package.fileName
+                            fileName
                             |> PassPackageCardMessage.DeletePass
                             |> dispatch
                         else ())
@@ -137,10 +146,10 @@ type PassPackageCard() =
     member val JsRuntime = Unchecked.defaultof<IJSRuntime> with get, set
 
     override this.View package dispatch =
-        cond package.pass (fun pass ->
-            match pass with
-            | EventTicket (passDefinition, passStructure: PassStructure) -> renderEventTicket passStructure package dispatch
-            | _ -> li { "Sorry this pass type is not supported yet" } )
+        cond package (fun package ->
+            match package with
+            | PassPackage.EventTicket (fileName, EventTicket(definition, structure), images) -> renderEventTicket structure fileName images dispatch
+            | _ -> li { "Sorry this pass type is not supported yet" })
 
     override this.OnAfterRenderAsync isFirstRender =
         if isFirstRender then

@@ -1,4 +1,5 @@
-﻿namespace PkPass
+﻿// Describes all the errors that can occur when loading a pass
+module PkPass.HomePage
 
 open System
 open System.Net.Http
@@ -10,119 +11,112 @@ open PkPass.LoadPass
 open PkPass.Components
 open PkPass.PassKit.Deserialization
 open PkPass.PassKit.Package
+// Home page can be displaying loaded passes or it is currently loading passes
+type HomePageState =
+    | LoadingPasses
+    // Passes loaded and display load result
+    | PassesLoaded of Result<PassPackage, LoadPassError> array
 
-// Describes all the errors that can occur when loading a pass
+type HomePage = HomePage
 
-module HomePage =
-    // Home page can be displaying loaded passes or it is currently loading passes
-    type HomePageState =
-        | LoadingPasses
-        // Passes loaded and display load result
-        | PassesLoaded of Result<PassPackage, LoadPassError> array
+module HomePageState =
+    let ``default`` = LoadingPasses
 
-    type HomePage = HomePage
+type HomePageError = UnknownError of Exception
 
-    module HomePageState =
-        let ``default`` = LoadingPasses
+type HomePageMessage =
+    | LoadPasses
+    | SetPassLoadResult of Result<PassPackage, LoadPassError> array
+    | DeletePass of passName: string
+    | AddUserSelectedFiles of FileSystemFileHandle array
+    | LogError of HomePageError
 
-    type HomePageError = UnknownError of Exception
+let deleteCachedPassFile fileName jsRuntime =
+    task {
+        let! cache = CacheStorage.open' "files" jsRuntime
+        let! _ = Cache.delete $"/files/{fileName}" cache
+        return ()
+    }
 
-    type HomePageMessage =
-        | LoadPasses
-        | SetPassLoadResult of Result<PassPackage, LoadPassError> array
-        | DeletePass of passName: string
-        | AddUserSelectedFiles of FileSystemFileHandle array
-        | LogError of HomePageError
+let update (message: HomePageMessage) (model: HomePageState) (jsRuntime: IJSRuntime) (httpClient: HttpClient) =
+    match message with
+    | LoadPasses ->
+        let loadAndSet () =
+            completelyLoadPasses jsRuntime httpClient
 
-    let deleteCachedPassFile fileName jsRuntime =
-        task {
-            let! cache = CacheStorage.open' "files" jsRuntime
-            let! _ = Cache.delete $"/files/{fileName}" cache
-            return ()
-        }
+        let command =
+            Cmd.OfTask.either loadAndSet () HomePageMessage.SetPassLoadResult (UnknownError >> LogError)
 
-    let update (message: HomePageMessage) (model: HomePageState) (jsRuntime: IJSRuntime) (httpClient: HttpClient) =
-        match message with
-        | LoadPasses ->
-            let loadAndSet () =
-                completelyLoadPasses jsRuntime httpClient
+        model, command
+    | SetPassLoadResult results -> HomePageState.PassesLoaded results, Cmd.none
+    | DeletePass passName ->
+        let delete () = deleteCachedPassFile passName jsRuntime
+        model, Cmd.OfTask.either delete () (fun _ -> LoadPasses) (UnknownError >> LogError)
+    | AddUserSelectedFiles fileHandles ->
+        fileHandles |> Array.length |> printfn "Loaded %O files"
 
-            let command =
-                Cmd.OfTask.either loadAndSet () HomePageMessage.SetPassLoadResult (UnknownError >> LogError)
+        model, Cmd.none
+    | LogError (UnknownError ``exception``) ->
+        Console.WriteLine $"An unexpected error occured:{Environment.NewLine}{``exception``}"
+        model, Cmd.none
 
-            model, command
-        | SetPassLoadResult results -> HomePageState.PassesLoaded results, Cmd.none
-        | DeletePass passName ->
-            let delete () = deleteCachedPassFile passName jsRuntime
-            model, Cmd.OfTask.either delete () (fun _ -> LoadPasses) (UnknownError >> LogError)
-        | AddUserSelectedFiles fileHandles ->
-            fileHandles |> Array.length |> printfn "Loaded %O files"
+let private createPngDataUrl base64String = $"data:image/png;base64,{base64String}"
 
-            model, Cmd.none
-        | LogError (UnknownError ``exception``) ->
-            Console.WriteLine $"An unexpected error occured:{Environment.NewLine}{``exception``}"
-            model, Cmd.none
+let private renderPrimaryField (field: Field) (headerFields) =
+    cond field.label (fun label ->
+        match label with
+        | Some (LocalizableString.LocalizableString label) ->
+            h3 {
+                attr.``class`` "flex justify-between items-end mb-1"
 
-    let private createPngDataUrl base64String = $"data:image/png;base64,{base64String}"
+                span {
+                    attr.``class`` "font-bold uppercase text-xs tracking-wider text-emphasis-low"
 
-    let private renderPrimaryField (field: Field) (headerFields) =
-        cond field.label (fun label ->
-            match label with
-            | Some (LocalizableString.LocalizableString label) ->
-                h3 {
-                    attr.``class`` "flex justify-between items-end mb-1"
+                    label
+                }
 
+                match headerFields with
+                | Some [ first ] ->
                     span {
-                        attr.``class`` "font-bold uppercase text-xs tracking-wider text-emphasis-low"
-
-                        label
+                        attr.``class`` "text-sm text-emphasis-medium leading-none"
+                        string first.value
                     }
-
-                    match headerFields with
-                    | Some [ first ] ->
-                        span {
-                            attr.``class`` "text-sm text-emphasis-medium leading-none"
-                            string first.value
-                        }
-                    | _ -> empty ()
-                }
-            | _ -> empty ())
-
-    let private passesPreviewList loadResults dispatch =
-        ul {
-            forEach loadResults (fun result ->
-                cond result (fun result ->
-                    match result with
-                    | Error loadPassError ->
-                        li {
-                            h2 { $"Sorry could not load that pass" }
-                            p { string loadPassError }
-                        }
-                    | Ok passPackage ->
-                        ecomp<PassPackageCard, _, _> passPackage (function
-                            | PassPackageCardMessage.DeletePass passName ->
-                                HomePageMessage.DeletePass passName |> dispatch) {
-                        attr.empty ()
-                    }))
-
-        }
-
-    let view (model: HomePageState) (dispatch: HomePageMessage Dispatch) =
-        match model with
-        | LoadingPasses -> main { "Loading passes..." }
-        | PassesLoaded loadResults ->
-            concat {
-
-                h1 {
-                    attr.``class`` "text-xl font-lighter mb-2 tracking-widest"
-                    "Passes"
-                }
-
-                passesPreviewList loadResults dispatch
-
-                // Button click has big side effect of requesting files from user and loading them into cache where
-                // we need to pick them up
-                ecomp<AddPassFloatingActionButton, _, _> () (fun _ -> dispatch HomePageMessage.LoadPasses) {
-                    attr.empty ()
-                }
+                | _ -> empty ()
             }
+        | _ -> empty ())
+
+let private passesPreviewList loadResults dispatch =
+    ul {
+        forEach loadResults (fun result ->
+            cond result (fun result ->
+                match result with
+                | Error loadPassError ->
+                    li {
+                        h2 { $"Sorry could not load that pass" }
+                        p { string loadPassError }
+                    }
+                | Result.Ok passPackage ->
+                    ecomp<PassPackageCard, _, _> passPackage (function
+                        | PassPackageCardMessage.DeletePass passName -> HomePageMessage.DeletePass passName |> dispatch) {
+                    attr.empty ()
+                }))
+
+    }
+
+let view (model: HomePageState) (dispatch: HomePageMessage Dispatch) =
+    match model with
+    | LoadingPasses -> main { "Loading passes..." }
+    | PassesLoaded loadResults ->
+        concat {
+
+            h1 {
+                attr.``class`` "text-xl font-lighter mb-2 tracking-widest"
+                "Passes"
+            }
+
+            passesPreviewList loadResults dispatch
+
+            // Button click has big side effect of requesting files from user and loading them into cache where
+            // we need to pick them up
+            ecomp<AddPassFloatingActionButton, _, _> () (fun _ -> dispatch HomePageMessage.LoadPasses) { attr.empty () }
+        }

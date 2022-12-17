@@ -4,76 +4,74 @@ open System
 open System.IO
 open System.IO.Compression
 open System.Net
-open System.Net.Http
 open System.Text.Json
 open Microsoft.FSharp.Core
 open PkPass.PassKit.Deserialization
+open PkPass.PassKit.Images
 
 //TODO make package hold the zip archive instead of the location to avoid opening it for every operation
 // Describes in what state the raw data of a package can be in.
 // These are dumb and do not know what the pass includes or if it is even valid
 type PassPackageData =
     | AsZip of ZipArchive * fileName : string
-    
 
-//TODO support loading from url or other sources. Might add additional dataUrl type to shift responsibility of knowing file type from consumer to producer
-type Image = Base64 of string
-type PassBackground = PassBackground of Image
-type PassLogo = PassLogo of Image
-type PassThumbnail = PassThumbnail of Image
-
-// Pass package is the loaded contents of a zip pass archive folder
+[<RequireQualifiedAccess>]
 type PassPackage =
-    { fileName: string
-      pass: Pass
-      background: PassBackground
-      logo: PassLogo
-      thumbnail: PassThumbnail }
+    | BoardingPass of fileName: string * BoardingPass * BoardingPassImages
+    | Coupon of fileName: string * Coupon * CouponImages
+    | EventTicket of fileName: string * EventTicket * EventTicketImages
+    | GenericPass of fileName: string * GenericPass * GenericPassImages
+    | StoreCard of fileName: string * StoreCard * StoreCardImages
 
-let private getFileFromPackage fileName (package: PassPackageData) =
-    let extractFromArchive (zip: ZipArchive) fileName =
-        let entry = zip.GetEntry fileName
+let extractFromArchive (zip: ZipArchive) fileName =
+    zip.GetEntry fileName
+    |> Option.ofObj
+    |> Option.map (fun entry ->
         use entryStream = entry.Open()
         use memoryStream = new MemoryStream()
         entryStream.CopyTo memoryStream
-        memoryStream.ToArray()
-
+        memoryStream.ToArray())
+    
+let private getFileFromPackage fileName (package: PassPackageData) =
     match package with
     | AsZip (zipArchive, _) -> extractFromArchive zipArchive fileName
 
 let getPass (package: PassPackageData) =
-    let data =
-        getFileFromPackage "pass.json" package
-
-    let mutable reader = Utf8JsonReader data
-    deserializePass &reader None PassDeserializationState.Default
-
-let getBackground (package: PassPackageData) =
     package
-    |> getFileFromPackage "background.png"
-    |> Convert.ToBase64String
-    |> Image.Base64
-    |> PassBackground
+    |> getFileFromPackage "pass.json"
+    |> Option.map (fun data ->
+        let mutable reader = Utf8JsonReader data
+        deserializePass &reader None PassDeserializationState.Default)
+    
 
-let getLogo (package: PassPackageData) =
-    package
-    |> getFileFromPackage "logo.png"
-    |> Convert.ToBase64String
-    |> Image.Base64
-    |> PassLogo
+/// <summary>
+/// Module containing functions for loading images from packages
+/// </summary>
+module Images =
+    let private getImageAs transformer name package  =
+        package
+        |> getFileFromPackage name
+        |> Option.map (Convert.ToBase64String >> Image.Base64 >> transformer)
+    let getBackground = getImageAs BackgroundImage "background.png"
+    let getLogo = getImageAs Logo "logo.png"
+    let getThumbnail = getImageAs Thumbnail "thumbnail.png"
+    let getIcon = getImageAs Icon "icon.png"
+    let getStripImage = getImageAs StripImage "strip.png"
+    let getFooterImage = getImageAs FooterImage "footer.png"
 
-let getThumbnail (package: PassPackageData) =
-    package
-    |> getFileFromPackage "thumbnail.png"
-    |> Convert.ToBase64String
-    |> Image.Base64
-    |> PassThumbnail
+    /// <summary>
+    /// Gets images common for every pass from the package
+    /// </summary>
+    /// <param name="package"></param>
+    let getCommonImages package =
+        (getLogo package, getIcon package)
+        ||> Option.map2 (fun logo icon -> CommonImages (logo,icon))
 
 
-type LoadPackageError =
-    | UnexpectedError of Exception
-    | UnsuccessfulResponse of HttpStatusCode
-// A union to cover all known errors that can happen in the app
-type AppError =
-    | DeserializationError of DeserializationError
-    | LoadPackageError of Exception
+    type LoadPackageError =
+        | UnexpectedError of Exception
+        | UnsuccessfulResponse of HttpStatusCode
+    // A union to cover all known errors that can happen in the app
+    type AppError =
+        | DeserializationError of DeserializationError
+        | LoadPackageError of Exception
