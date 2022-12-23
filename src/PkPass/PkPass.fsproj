@@ -36,6 +36,8 @@
     <Compile Include="Components\FloatingActionButton.fs" />
     <Compile Include="Components\AddPassFloatingActionButton.fs" />
     <Compile Include="Components\PassPackageCard.fs" />
+    <Compile Include="Components\BoardingPassCard.fs" />
+    <Compile Include="Components\PassList.fs" />
     <Compile Include="HomePage.fs" />
     <Compile Include="App.fs" />
     <Compile Include="Startup.fs" />

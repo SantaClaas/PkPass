@@ -11,6 +11,7 @@ open PkPass.LoadPass
 open PkPass.Components
 open PkPass.PassKit.Field
 open PkPass.PassKit.Package
+open PkPass.Components.Elements
 // Home page can be displaying loaded passes or it is currently loading passes
 type HomePageState =
     | LoadingPasses
@@ -87,19 +88,44 @@ let private renderPrimaryField (field: Field) (headerFields) =
 
 let private passesPreviewList loadResults dispatch =
     ul {
-        forEach loadResults (fun result ->
-            cond result (fun result ->
-                match result with
-                | Error loadPassError ->
-                    li {
-                        h2 { $"Sorry could not load that pass" }
-                        p { string loadPassError }
-                    }
-                | Result.Ok passPackage ->
-                    ecomp<PassPackageCard, _, _> passPackage (function
-                        | PassPackageCardMessage.DeletePass passName -> HomePageMessage.DeletePass passName |> dispatch) {
-                    attr.empty ()
-                }))
+        
+        attr.``class`` "absolute top-0 left-0 p-4 text-slate-900 snap-y snap-mandatory h-full w-full overflow-y-auto"
+
+        li {
+            attr.``class`` "snap-center sticky top-0 origin-top"
+            boardingPass ()
+        }
+
+        li {
+            attr.``class`` "snap-center sticky top-0 origin-top"
+
+            boardingPass ()
+        }
+
+        li {
+            attr.``class`` "snap-center sticky top-0 origin-top"
+
+            boardingPass ()
+        }
+
+        li {
+            attr.``class`` "snap-center sticky top-0 origin-top"
+
+            boardingPass ()
+        }
+    // forEach loadResults (fun result ->
+    //     cond result (fun result ->
+    //         match result with
+    //         | Error loadPassError ->
+    //             li {
+    //                 h2 { $"Sorry could not load that pass" }
+    //                 p { string loadPassError }
+    //             }
+    //         | Result.Ok passPackage ->
+    //             ecomp<PassPackageCard, _, _> passPackage (function
+    //                 | PassPackageCardMessage.DeletePass passName -> HomePageMessage.DeletePass passName |> dispatch) {
+    //             attr.empty ()
+    //         }))
 
     }
 
@@ -108,15 +134,16 @@ let view (model: HomePageState) (dispatch: HomePageMessage Dispatch) =
     | LoadingPasses -> main { "Loading passes..." }
     | PassesLoaded loadResults ->
         concat {
+            //
+            // h1 {
+            //     attr.``class`` "text-xl font-lighter mb-2 tracking-widest"
+            //     "Passes"
+            // }
 
-            h1 {
-                attr.``class`` "text-xl font-lighter mb-2 tracking-widest"
-                "Passes"
-            }
+            // passesPreviewList loadResults dispatch
+            comp<PassList> { attr.empty() }
 
-            passesPreviewList loadResults dispatch
-
-            // Button click has big side effect of requesting files from user and loading them into cache where
-            // we need to pick them up
+        // Button click has big side effect of requesting files from user and loading them into cache where
+        // we need to pick them up
             ecomp<AddPassFloatingActionButton, _, _> () (fun _ -> dispatch HomePageMessage.LoadPasses) { attr.empty () }
         }

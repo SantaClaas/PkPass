@@ -71,9 +71,7 @@ module App =
         }
 
     let view state dispatch =
-        main {
-            attr.``class`` "p-4"
-
+        concat {
             cond state (fun state ->
                 match state with
                 | HomePageState homePageState ->
@@ -81,6 +79,7 @@ module App =
 
             comp<VersionInformation> { attr.empty () }
         }
+        
 
 
     let createProgram jsRuntime httpClient =
