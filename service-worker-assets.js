@@ -33,7 +33,7 @@
       "url": "_framework\/icudt.dat"
     },
     {
-      "hash": "sha256-uT\/DGe1SIh1SRQhRj6k9LqMYpXEVI+AIRED12F8jafA=",
+      "hash": "sha256-4Wh0Xo4dyIbRVfcY9RQ+Sud6irQ\/Kcz1aZLuJLBP178=",
       "url": "_framework\/blazor.boot.json"
     },
     {
@@ -41,7 +41,7 @@
       "url": "_framework\/Bolero.dll"
     },
     {
-      "hash": "sha256-8kMft+SdhVWyvYADwTqpXNBgLGsXKj4RHJPiYpaNTM8=",
+      "hash": "sha256-UgShy5rKYWDnyveoE4ExRLmDxvVeiHaszficBExChl4=",
       "url": "_framework\/Bolero.Html.dll"
     },
     {
@@ -157,7 +157,7 @@
       "url": "_framework\/netstandard.dll"
     },
     {
-      "hash": "sha256-wjkIGlkCNeNQXqt2NKWCBEX7\/1eELxO\/2B03H\/RkYxM=",
+      "hash": "sha256-05WEu0X+vYYmq+NSoizjARowAeAo1o1l092CqzRRJDQ=",
       "url": "_framework\/PkPass.dll"
     },
     {
@@ -377,6 +377,10 @@
       "url": "brotli\/decode.min.js"
     },
     {
+      "hash": "sha256-Ic2g2v6vlUyvPxAgobfsxSJ5a4\/fu\/3UsN39tKjLpTM=",
+      "url": "cards3d.js"
+    },
+    {
       "hash": "sha256-qU+KhVPK6oQw3UyjzAHU4xjRmCj3TLZUU\/+39dni9E0=",
       "url": "favicon.ico"
     },
@@ -445,7 +449,7 @@
       "url": "icon.svg"
     },
     {
-      "hash": "sha256-WO3x1e\/wBqJ+z54Wacfyu+i2osS12+yONGCNyC5AInY=",
+      "hash": "sha256-H415nMLM1EbbbkBIsdu\/tGXb6ji6mrYrEViHd9cnkek=",
       "url": "index.html"
     },
     {
@@ -481,5 +485,5 @@
       "url": "splash.icon.png"
     }
   ],
-  "version": "GZRtIOY+"
+  "version": "kGSzGYCG"
 };

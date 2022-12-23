@@ -8,7 +8,7 @@
   "resources": {
     "assembly": {
       "Bolero.dll": "sha256-Z0Bhp\/T6\/+WFGmw\/ifxl1lyQQmNIQzCZ8UpQeSj8eug=",
-      "Bolero.Html.dll": "sha256-8kMft+SdhVWyvYADwTqpXNBgLGsXKj4RHJPiYpaNTM8=",
+      "Bolero.Html.dll": "sha256-UgShy5rKYWDnyveoE4ExRLmDxvVeiHaszficBExChl4=",
       "Elmish.dll": "sha256-5H7BmMsFMjsz+wRsYokaGccMxgKLSeYGI9vXfu5lHJU=",
       "FSharp.Core.dll": "sha256-uErnv4wjny5D0T9wStilfJh3M6EaXMy5nR4\/2uzw6R4=",
       "FSharp.SystemTextJson.dll": "sha256-oXX98JEaNyAB3al+djazdR6xwngVSByYW981Wz9vpdI=",
@@ -37,7 +37,7 @@
       "Microsoft.JSInterop.WebAssembly.dll": "sha256-gAM0U1w98ffRNyjMybCtgJeQFGgmxqc7CH1\/UxP2p2o=",
       "Microsoft.Net.Http.Headers.dll": "sha256-P66ftDrXwc6ayND8uYzIk0CPQy1GjNZAPHx9RMhi3V4=",
       "netstandard.dll": "sha256-C\/VI4pOGl0qRrWq4+3g8zrJjouOGpVc7EgGqFzv0MNM=",
-      "PkPass.dll": "sha256-wjkIGlkCNeNQXqt2NKWCBEX7\/1eELxO\/2B03H\/RkYxM=",
+      "PkPass.dll": "sha256-05WEu0X+vYYmq+NSoizjARowAeAo1o1l092CqzRRJDQ=",
       "QRCoder.dll": "sha256-b8A2KqWamt+7PUp3wiXG0hPTtBMFwGOBOE24dZApTJY=",
       "System.Buffers.dll": "sha256-JBI+Dlr7TNJ00N\/AheVxIS3RQdwcGMlcZ6hhPcF75fc=",
       "System.Collections.Concurrent.dll": "sha256-6wApjvJyrjErTu9vlG+9js9qrVnJRGknXEGTDr17Sug=",
