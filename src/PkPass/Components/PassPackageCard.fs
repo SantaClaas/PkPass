@@ -154,7 +154,8 @@ type PassPackageCard() =
             | _ -> li { "Sorry this pass type is not supported yet" })
 
     override this.OnAfterRenderAsync isFirstRender =
-        if isFirstRender then
+        match scrollContainerReference.Value, deleteSectionReference.Value, isFirstRender with
+        | Some containerReference, Some sectionReference, true ->
             task {
                 // let! jsFunction = this.JsRuntime.InvokeAsync<IJSObjectReference>("Function", "a", "b", "return a + b")
                 // jsFunction.
@@ -162,12 +163,11 @@ type PassPackageCard() =
                 use! jsModule = this.JsRuntime.InvokeAsync<IJSObjectReference>("import", "/scrollsnap.js")
                 // Save the intersection observer and dispose it when the component is disposed
                 // Might add update of CSS variable to change size of icon depending on how far the delete is swiped open
-                let! observer = jsModule.InvokeAsync<IJSObjectReference>("createObserver", scrollContainerReference, deleteSectionReference)
+                let! observer = jsModule.InvokeAsync<IJSObjectReference>("createObserver", containerReference, sectionReference)
                 intersectionObserver <- Some observer
                 return ()
             }
-        else 
-            Task.CompletedTask
+        | _, _, _ -> Task.CompletedTask
 
     interface IAsyncDisposable with
         member this.DisposeAsync () = 
