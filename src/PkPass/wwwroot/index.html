@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Passes</title>
     <base href="/">
     <link rel="icon" href="icon.svg">
@@ -15,14 +15,14 @@
     <!--For dark/light mode specifically-->
     <meta name="theme-color" content="#872e4e" media="(prefers-color-scheme: dark)">
     <!-- Make app installable -->
-    <link href="app.json.webmanifest" rel="manifest" />
+    <link href="app.json.webmanifest" rel="manifest"/>
 
     <!-- GoogleFonts: TODO self host -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
-        rel="stylesheet">
+            href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap"
+            rel="stylesheet">
 
     <!-- Tailwind CSS play CDN: TODO use proper build -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -32,7 +32,7 @@
                 -webkit-tap-highlight-color: transparent;
             }
         }
-        
+
         @layer utility {
             .invisible-scrollbar::-webkit-scrollbar {
                 display: none;
@@ -189,41 +189,52 @@
 </head>
 
 <body>
-    <main id="main" class="p-0 m-0 scroll-smooth">Loading...</main>
-    <script src="fileHandling.js"></script>
-    <script src="_framework/blazor.webassembly.js" autostart="false"></script>
-    <script type="module">
-        // This is to load brotli compressed files for load time optimization
-        // See more: https://learn.microsoft.com/en-us/aspnet/core/blazor/host-and-deploy/webassembly?view=aspnetcore-7.0#compression
-        import { BrotliDecode } from './brotli/decode.min.js';
-        Blazor.start({
-            loadBootResource: function (type, name, defaultUri, integrity) {
-                if (type !== 'dotnetjs' && location.hostname !== 'localhost') {
-                    return (async function () {
-                        const response = await fetch(defaultUri + '.br', { cache: 'no-cache' });
-                        if (!response.ok) {
-                            throw new Error(response.statusText);
-                        }
-                        const originalResponseBuffer = await response.arrayBuffer();
-                        const originalResponseArray = new Int8Array(originalResponseBuffer);
-                        const decompressedResponseArray = BrotliDecode(originalResponseArray);
-                        const contentType = type ===
-                            'dotnetwasm' ? 'application/wasm' : 'application/octet-stream';
-                        return new Response(decompressedResponseArray,
-                            { headers: { 'content-type': contentType } });
-                    })();
-                }
-            }
-        });
-    </script>
-    <script>navigator.serviceWorker.register('service-worker.js');</script>
-    <script>
-        // Blazor custom event set up for custom intersection event to enable deleting passes
+<main id="main" class="p-0 m-0 scroll-smooth">
+    <svg xmlns="http://www.w3.org/2000/svg"
+         class="absolute top-1/2 left-1/2 origin-center -translate-y-1/2 -translate-x-1/2 saturate-[var(--blazor-load-percentage)]"
+         viewBox="0 0 500 500">
+        <path fill="#2bd5ff" stroke="#000" stroke-linejoin="round" stroke-miterlimit="10" stroke-width="27"
+              d="M417.2 417.2A236.5 236.5 0 0 1 54.3 117.1l65.8 65.8a146.2 146.2 0 1 0 259.8 0l65.8-65.8a236.6 236.6 0 0 1-28.5 300.1z"
+        />
+        <path fill="#f056cc" stroke="#000" stroke-linejoin="round" stroke-miterlimit="10" stroke-width="27"
+              d="M383 54.3 317 120.1a146.4 146.4 0 0 0-197 62.8L54.3 117a238.5 238.5 0 0 1 62.8-62.8 236.8 236.8 0 0 1 265.8 0z"/>
+    </svg>
+</main>
+<script src="fileHandling.js"></script>
+<script src="_framework/blazor.webassembly.js" autostart="false"></script>
+<script type="module">
+    // This is to load brotli compressed files for load time optimization
+    // See more: https://learn.microsoft.com/en-us/aspnet/core/blazor/host-and-deploy/webassembly?view=aspnetcore-7.0#compression
+    import {BrotliDecode} from './brotli/decode.min.js';
 
-        Blazor.registerCustomEventType('intersect', {
-            createEventArgs: event => event.detail,
-        });
-    </script>
+    Blazor.start({
+        loadBootResource: function (type, name, defaultUri, integrity) {
+            if (type !== 'dotnetjs' && location.hostname !== 'localhost') {
+                return (async function () {
+                    const response = await fetch(defaultUri + '.br', {cache: 'no-cache'});
+                    if (!response.ok) {
+                        throw new Error(response.statusText);
+                    }
+                    const originalResponseBuffer = await response.arrayBuffer();
+                    const originalResponseArray = new Int8Array(originalResponseBuffer);
+                    const decompressedResponseArray = BrotliDecode(originalResponseArray);
+                    const contentType = type ===
+                    'dotnetwasm' ? 'application/wasm' : 'application/octet-stream';
+                    return new Response(decompressedResponseArray,
+                        {headers: {'content-type': contentType}});
+                })();
+            }
+        }
+    });
+</script>
+<script>navigator.serviceWorker.register('service-worker.js');</script>
+<script>
+    // Blazor custom event set up for custom intersection event to enable deleting passes
+
+    Blazor.registerCustomEventType('intersect', {
+        createEventArgs: event => event.detail,
+    });
+</script>
 </body>
 
 </html>
