@@ -30,19 +30,25 @@ type PassList() =
             li {
                 attr.``class`` "snap-center sticky top-0 origin-top pt-2"
 
-                boardingPass ()
+                coupon ()
             }
 
             li {
                 attr.``class`` "snap-center sticky top-0 origin-top pt-5"
 
-                boardingPass ()
+                eventTicketWithBackgroundImage ()
             }
 
             li {
                 attr.``class`` "snap-center sticky top-0 origin-top pt-8"
 
-                boardingPass ()
+                eventTicketWithStripImage ()
+            }
+            
+            li {
+                attr.``class`` "snap-center sticky top-0 origin-top pt-8"
+
+                genericPass ()
             }
         // forEach loadResults (fun result ->
         //     cond result (fun result ->
