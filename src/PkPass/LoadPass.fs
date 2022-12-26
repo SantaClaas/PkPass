@@ -106,6 +106,7 @@ let private loadPassesDataFromCacheUrls (client: HttpClient) (urls: string array
 let private loadPassPackage (package: PassPackageData) : Result<PassPackage, LoadPassError> =
     let (PassPackageData.AsZip (_, name)) = package
     let commonImagesResult = getCommonImages package |> LoadPassError.requireImage
+
     /// <summary>
     /// Helper function to load common images and pass specific images
     /// </summary>
@@ -119,14 +120,24 @@ let private loadPassPackage (package: PassPackageData) : Result<PassPackage, Loa
         | Error imageMissing, Result.Ok _
         | Result.Ok _, Error imageMissing -> imageMissing |> LoadPassError.RequiredImageMissing |> Error
 
+    let fileName = FileName name
+
     let constructPassPackage pass =
         match pass with
         | PassStyle.BoardingPass boardingPass ->
             loadImages BoardingPassImages getFooterImage
-            |> Result.map (fun images -> PassPackage.BoardingPass(name, boardingPass, images))
+            |> Result.map (fun images ->
+                PassPackage.BoardingPass
+                    { fileName = fileName
+                      pass = boardingPass
+                      images = images })
         | PassStyle.Coupon coupon ->
             loadImages CouponImages getStripImage
-            |> Result.map (fun images -> PassPackage.Coupon(name, coupon, images))
+            |> Result.map (fun images ->
+                PassPackage.Coupon
+                    { fileName = fileName
+                      pass = coupon
+                      images = images })
         | PassStyle.EventTicket eventTicket ->
             // Event ticket image loading is a bit more complicated since it has extra requirements
             match getStripImage package, getBackground package, getThumbnail package with
@@ -136,7 +147,7 @@ let private loadPassPackage (package: PassPackageData) : Result<PassPackage, Loa
             | Some _, Some _, _ -> LoadPassError.EventTicketWithInvalidImages |> Error
             // Only strip image
             | Some stripImage, _, _ -> EventTicketImageOption.StripImage stripImage |> Result.Ok
-            // Only the other images 
+            // Only the other images
             | _, Some background, Some thumbnail -> EventTicketImageOption.Other(background, thumbnail) |> Result.Ok
             // Images are missing or none are provided
             | _, Some _, _ ->
@@ -159,14 +170,27 @@ let private loadPassPackage (package: PassPackageData) : Result<PassPackage, Loa
                     requiredImageMissingError |> LoadPassError.RequiredImageMissing |> Error
                 | Result.Ok commonImages ->
                     let ticketImages = EventTicketImages(commonImages, images)
-                    PassPackage.EventTicket(name, eventTicket, ticketImages) |> Result.Ok)
+
+                    PassPackage.EventTicket
+                        { fileName = fileName
+                          pass = eventTicket
+                          images = ticketImages }
+                    |> Result.Ok)
         | PassStyle.Generic genericPass ->
             loadImages GenericPassImages getThumbnail
-            |> Result.map (fun images -> PassPackage.GenericPass(name, genericPass, images))
-        | PassStyle.StoreCard storeCard -> 
+            |> Result.map (fun images ->
+                PassPackage.GenericPass
+                    { fileName = fileName
+                      pass = genericPass
+                      images = images })
+        | PassStyle.StoreCard storeCard ->
             loadImages StoreCardImages getStripImage
-            |> Result.map (fun images -> PassPackage.StoreCard(name, storeCard, images))
-            
+            |> Result.map (fun images ->
+                PassPackage.StoreCard
+                    { fileName = fileName
+                      pass = storeCard
+                      images = images })
+
     match getPass package with
     | Some (Recovered (pass, errors)) ->
         //TODO remove temporary debug side effect
@@ -179,12 +203,12 @@ let private loadPassPackage (package: PassPackageData) : Result<PassPackage, Loa
             builder.AppendLine $"Encountered error {error}" |> ignore
 
         Console.WriteLine(builder.ToString())
-        
+
         constructPassPackage pass
     | Some (Ok pass) -> constructPassPackage pass
     | Some (Failed error) -> LoadPassError.DeserializationError error |> Error
     | None -> LoadPassError.NoPassJsonFile |> Error
-        
+
 let completelyLoadPasses jsRuntime client =
     task {
 
@@ -196,5 +220,5 @@ let completelyLoadPasses jsRuntime client =
         let toPassPackage = Result.bind loadPassPackage
 
         // 3. Extract data from pass files
-        return packagesDataLoadResults |> Array.map toPassPackage 
+        return packagesDataLoadResults |> Array.map toPassPackage
     }

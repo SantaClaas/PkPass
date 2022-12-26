@@ -141,7 +141,7 @@ let view (model: HomePageState) (dispatch: HomePageMessage Dispatch) =
             // }
 
             // passesPreviewList loadResults dispatch
-            comp<PassList> { attr.empty() }
+            ecomp<PassList,_,_> loadResults (fun _ -> ()) { attr.empty() }
 
         // Button click has big side effect of requesting files from user and loading them into cache where
         // we need to pick them up

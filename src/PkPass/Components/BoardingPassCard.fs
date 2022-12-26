@@ -6,8 +6,12 @@ open Bolero.Builders
 open Bolero.Html
 open Microsoft.AspNetCore.Components
 open Microsoft.JSInterop
+open PkPass.PassKit.Images
+open PkPass.PassKit.Package
 
 module Elements =
+    
+    let private createPngDataUrl base64String = $"data:image/png;base64,{base64String}"
     let private headerFields (logoText: string) =
         header {
             attr.``class`` "bg-elevation-2 h-12 px-2 pt-2 pb-1 w-full flex justify-between items-center"
@@ -120,8 +124,7 @@ module Elements =
 
             (section { barcode () })
 
-
-    let eventTicketWithBackgroundImage () =
+    let eventTicketWithBackgroundImage (BackgroundImage backgroundImage) (Thumbnail thumbnail) =
         passCard
             (section {
                 headerFields "Event ticket 1"
@@ -138,7 +141,12 @@ module Elements =
                             div { attr.``class`` "bg-elevation-6 h-1/3 w-full p-1" }
                         }
 
-                        div { attr.``class`` "h-full aspect-[3/4] bg-elevation-4 rounded-lg" }
+                        img {
+                            attr.``class`` "h-full bg-elevation-4 rounded-lg"
+                            match thumbnail with
+                            | Base64 base64 ->
+                                base64 |> createPngDataUrl |> attr.src
+                        }
                     }
                 }
 
@@ -189,3 +197,6 @@ module Elements =
             })
 
             (section { barcode () })
+
+    // Store card and coupon basically have the same layout
+    let storeCard = coupon

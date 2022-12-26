@@ -15,7 +15,10 @@ open PkPass.PassKit.PassStructure
 open PkPass.Events
 open PkPass.Events.Html
 
+[<Obsolete>]
 type PassPackageCardMessage = DeletePass of passName : string
+
+[<Obsolete>]
 type PassPackageCard() =
     inherit ElmishComponent<PassPackage,PassPackageCardMessage>()
     
@@ -150,7 +153,7 @@ type PassPackageCard() =
     override this.View package dispatch =
         cond package (fun package ->
             match package with
-            | PassPackage.EventTicket (fileName, EventTicket(definition, structure), images) -> renderEventTicket structure fileName images dispatch
+            //| PassPackage.EventTicket (fileName, EventTicket(definition, structure), images) -> renderEventTicket structure fileName images dispatch
             | _ -> li { "Sorry this pass type is not supported yet" })
 
     override this.OnAfterRenderAsync isFirstRender =

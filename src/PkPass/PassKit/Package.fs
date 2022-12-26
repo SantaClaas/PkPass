@@ -15,14 +15,43 @@ open PkPass.PassKit.Images
 // These are dumb and do not know what the pass includes or if it is even valid
 type PassPackageData =
     | AsZip of ZipArchive * fileName : string
+    
+type FileName = FileName of string
+type BoardingPassPackage = {
+    fileName: FileName
+    pass: BoardingPass
+    images: BoardingPassImages
+}
+type CouponPassPackage = {
+    fileName: FileName
+    pass: Coupon
+    images: CouponImages
+}
+type EventTicketPassPackage = {
+    fileName: FileName
+    pass: EventTicket
+    images: EventTicketImages   
+}
+type GenericPassPackage = {
+    fileName: FileName
+    pass: GenericPass
+    images: GenericPassImages
+    
+}
+type StoreCardPassPackage ={
+    fileName: FileName
+    pass: StoreCard
+    images: StoreCardImages
+    
+}
 
 [<RequireQualifiedAccess>]
 type PassPackage =
-    | BoardingPass of fileName: string * BoardingPass * BoardingPassImages
-    | Coupon of fileName: string * Coupon * CouponImages
-    | EventTicket of fileName: string * EventTicket * EventTicketImages
-    | GenericPass of fileName: string * GenericPass * GenericPassImages
-    | StoreCard of fileName: string * StoreCard * StoreCardImages
+    | BoardingPass of BoardingPassPackage
+    | Coupon of CouponPassPackage
+    | EventTicket of EventTicketPassPackage
+    | GenericPass of GenericPassPackage
+    | StoreCard of StoreCardPassPackage
 
 let extractFromArchive (zip: ZipArchive) fileName =
     zip.GetEntry fileName
