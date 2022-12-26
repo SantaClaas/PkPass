@@ -54,16 +54,22 @@ module Elements =
     /// <summary>
     /// Creates a basic element in which the pass type specific layout gets nested
     /// </summary>
-    let private passCard (fieldsSection : Node) (barcodeSection : Node) =
+    let private passCard (fieldsSection: Node) (barcodeSection: Node) =
         article {
             attr.``class``
                 "origin-top transition-transform scale-[var(--scale)] bg-elevation-1 rounded-lg aspect-[1/1.62] \
                  overflow-hidden flex flex-col justify-between mb-10 shadow-xl text-emphasis-high"
-                 
+
             fieldsSection
             barcodeSection
         }
-    
+
+    let private fields =
+        article {
+            attr.``class`` "bg-elevation-2 h-12 px-2 py-2"
+            div { attr.``class`` "bg-elevation-3 w-full h-full rounded" }
+        }
+
     let a () =
         passCard
             (section {
@@ -77,17 +83,11 @@ module Elements =
                 }
 
                 // Auxiliary fields
-                article {
-                    attr.``class`` "bg-elevation-2 h-10 px-2 py-1"
-                    div { attr.``class`` "bg-elevation-3 w-full h-full rounded" }
-                }
+                fields
 
-                article {
-                    attr.``class`` "bg-elevation-2 h-10 px-2 py-1"
-                    div { attr.``class`` "bg-elevation-3 w-full h-full rounded" }
-                }
+                fields
             })
-            
+
             (section {
                 article {
                     attr.``class`` "bg-elevation-2 h-8 px-2 py-1"
@@ -96,7 +96,7 @@ module Elements =
 
                 barcode ()
             })
-        
+
     let boardingPass () =
         passCard
             (section {
@@ -110,18 +110,13 @@ module Elements =
                 }
 
                 // Auxiliary fields
-                article {
-                    attr.``class`` "bg-elevation-2 h-10 px-2 py-1"
-                    div { attr.``class`` "bg-elevation-3 w-full h-full rounded" }
-                }
+                fields
 
-                article {
-                    attr.``class`` "bg-elevation-2 h-10 px-2 py-1"
-                    div { attr.``class`` "bg-elevation-3 w-full h-full rounded" }
-                }
+                fields
             })
-            
+
             (section {
+                // Footer
                 article {
                     attr.``class`` "bg-elevation-2 h-8 px-2 py-1"
                     div { attr.``class`` "bg-elevation-3 w-full h-full rounded" }
@@ -147,14 +142,11 @@ module Elements =
                 }
 
                 // Secondary and auxiliary fields
-                article {
-                    attr.``class`` "bg-elevation-2 h-12 px-2 py-2"
-                    div { attr.``class`` "bg-elevation-3 w-full h-full rounded" }
-                }
+                fields
             })
 
             (section { barcode () })
-        
+
 
     let eventTicketWithBackgroundImage () =
         passCard
@@ -177,10 +169,7 @@ module Elements =
                     }
                 }
 
-                article {
-                    attr.``class`` "bg-elevation-2 h-12 px-2 py-2"
-                    div { attr.``class`` "bg-elevation-3 w-full h-full rounded" }
-                }
+                fields
             })
 
             (section { barcode () })
@@ -201,15 +190,9 @@ module Elements =
                     }
                 }
 
-                article {
-                    attr.``class`` "bg-elevation-2 h-12 px-2 py-2"
-                    div { attr.``class`` "bg-elevation-3 w-full h-full rounded" }
-                }
+                fields
 
-                article {
-                    attr.``class`` "bg-elevation-2 h-12 px-2 py-2"
-                    div { attr.``class`` "bg-elevation-3 w-full h-full rounded" }
-                }
+                fields
             })
 
             (section { barcode () })
@@ -229,11 +212,7 @@ module Elements =
                     }
                 }
 
-                article {
-                    attr.``class`` "bg-elevation-2 h-12 px-2 py-2"
-                    div { attr.``class`` "bg-elevation-3 w-full h-full rounded" }
-                }
+                fields
             })
-            
+
             (section { barcode () })
-        
