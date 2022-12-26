@@ -70,33 +70,6 @@ module Elements =
             div { attr.``class`` "bg-elevation-3 w-full h-full rounded" }
         }
 
-    let a () =
-        passCard
-            (section {
-                // Header fields
-                headerFields "Boarding pass"
-                // Primary fields
-                article {
-                    attr.``class`` "bg-elevation-2 flex justify-between h-20 px-2 py-1"
-                    div { attr.``class`` "aspect-video bg-elevation-3 rounded" }
-                    div { attr.``class`` "aspect-video bg-elevation-3 rounded" }
-                }
-
-                // Auxiliary fields
-                fields
-
-                fields
-            })
-
-            (section {
-                article {
-                    attr.``class`` "bg-elevation-2 h-8 px-2 py-1"
-                    div { attr.``class`` "bg-elevation-3 w-full h-full rounded" }
-                }
-
-                barcode ()
-            })
-
     let boardingPass () =
         passCard
             (section {
