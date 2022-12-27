@@ -1,13 +1,9 @@
 ﻿namespace PkPass.Components
 
-open System.Threading.Tasks
+open System.Text
+open FSharp.Core
 open Bolero
-open Bolero.Builders
 open Bolero.Html
-open Microsoft.AspNetCore.Components
-open Microsoft.FSharp.Core
-open Microsoft.JSInterop
-open PkPass.PassKit
 open PkPass.PassKit.Barcode
 open PkPass.PassKit.Deserialization
 open PkPass.PassKit.Field
@@ -18,38 +14,53 @@ module Elements =
 
     let private createPngDataUrl base64String = $"data:image/png;base64,{base64String}"
    
-    let toText = function
+    
+    let toText value =
+        cond value (function
         | FieldValue.LocalizableString (LocalizableString value) ->
             value |> text
         | FieldValue.Date date ->
             date.ToLocalTime() |> string |> text
         | FieldValue.Number number ->
-            number |> string |> text
-    let private headerFieldsRow' (Logo (Base64 base64)) (logoText: LocalizableString option) (headerFields: Field list option) =
-        let headerField
-            { value=value }
-            =
-            div {
-                attr.``class`` "w-full text-end h-7 align-middle"
-
+            number |> string |> text)
+            
+    let private fieldLabel (label : LocalizableString option) =
+        cond label (function  
+            | Some (LocalizableString localizableString) ->
                 p {
-                    attr.``class`` "align-middle"
-                    
-                    cond value toText
+                    attr.``class`` "text-[var(--pass-label-color)] text-sm font-bold tracking-wider leading-none"
+                    localizableString    
                 }
-            }
+            | None -> empty())
+        
+    let private fieldValue (value : FieldValue) =
+        p {
+            attr.``class`` "text-lg"
+          
+            value |> toText
+        }
+        
+    let private headerField
+        ({ value=value
+           label=label } : Field)
+        =
+        div {
+            attr.``class`` "w-full text-end align-middle"
+            fieldLabel label
+            fieldValue value
+        }
+    let private headerFieldsRow' (Logo (Base64 base64)) (logoText: LocalizableString option) (headerFields: Field list option) =
+       
             
         header {
-            attr.``class`` "h-12 px-2 pt-2 pb-1 w-full flex justify-between items-center"
+            attr.``class`` "h-14 w-full flex justify-between items-center"
 
-            div {
-                attr.``class`` "w-full h-7 align-middle"
-
-                img {
-                    attr.``class`` "h-full aspect-auto"
-                    base64 |> createPngDataUrl |> attr.src
-                }
+            img {
+                attr.``class`` "h-full aspect-auto"
+                attr.alt "A thumbnail for the event ticket probably showing the poster or something related to the event. A proper alternate text is not provided."
+                base64 |> createPngDataUrl |> attr.src
             }
+            
 
             cond logoText (function
                 | Some (LocalizableString localizableString) ->
@@ -72,7 +83,7 @@ module Elements =
 
     let private headerFieldsRow (logoText: string) =
         header {
-            attr.``class`` "bg-elevation-2 h-12 px-2 pt-2 pb-1 w-full flex justify-between items-center"
+            attr.``class`` "bg-elevation-2 h-12 w-full flex justify-between items-center mb-3"
 
             div {
                 attr.``class`` "bg-elevation-3 w-full h-7 align-middle"
@@ -104,7 +115,6 @@ module Elements =
 
     let private barcode () =
         article {
-            attr.``class`` "bg-elevation-2 px-2 pb-2 pt-1"
 
             div {
                 attr.``class`` "bg-elevation-3 rounded p-3"
@@ -113,14 +123,13 @@ module Elements =
         }
     let private barcode' (Barcode(alternateText, barcodeFormat, message, _)) =
         article {
-            attr.``class`` "px-2 pb-2 pt-1"
 
             div {
-                attr.``class`` "rounded p-3"
+                attr.``class`` "rounded"
                 
                 cond barcodeFormat (function
                     | Qr ->
-                        let (Base64 base64) = Barcode.createQrCode message
+                        let (Base64 base64) = createQrCode message
                         img {
                             attr.``class`` "aspect-square w-60 m-auto rounded-xl"
                             attr.alt alternateText
@@ -131,47 +140,81 @@ module Elements =
 
     let private passCardWithBackground
         (backgroundImage: BackgroundImage option)
+        (foregroundColor: CssColor option)
+        (backgroundColor: CssColor option)
+        (labelColor: CssColor option)
         (fieldsSection: Node)
         (barcodeSection: Node)
         =
+        let toVariableString variableName (CssColor color) = $"{variableName}: {color};"        
+        
+        let foregroundVariable = foregroundColor
+                                 |> Option.map (toVariableString "--pass-foreground")
+        let backgroundVariable = backgroundColor
+                                 |> Option.map (toVariableString "--pass-background")
+        let labelColorVariable = labelColor
+                                 |> Option.map (toVariableString "--pass-label-color")
+    
+        let append (string : string) (state: StringBuilder) =
+            state.Append string
+            
+        let appendBackgroundImage (BackgroundImage (Base64 base64String)) state =
+            append
+                (base64String 
+                |> createPngDataUrl
+                |> Printf.sprintf """background-image: url("%s");""")
+                state
+            
+        let style =
+            StringBuilder()
+            |> Option.foldBack append foregroundVariable 
+            |> Option.foldBack append backgroundVariable
+            |> Option.foldBack append labelColorVariable
+            |> Option.foldBack appendBackgroundImage backgroundImage
+                    
         article {
             attr.``class``
-                "origin-top transition-transform scale-[var(--scale)] rounded-lg aspect-[1/1.62] \
-                 overflow-hidden flex flex-col justify-between mb-10 shadow-xl text-emphasis-high"
-
-            match backgroundImage with
-            | Some (BackgroundImage (Base64 base64String)) ->
-                $"""background-image: url("{createPngDataUrl base64String}");""" |> attr.style
-            | None -> attr.empty ()
+                "origin-top transition-transform scale-[var(--scale)] aspect-[1/1.62] \
+                 overflow-hidden shadow-xl rounded-lg \
+                 flex flex-col gap-3 justify-between \
+                 text-emphasis-high text-[var(--pass-foreground)] p-3"
+            
+            if style.Length <> 0 then
+                style
+                |> string
+                |> attr.style
+            else attr.empty ()
 
             fieldsSection
             barcodeSection
         }
+        
     //TODO can I solve this with the ElementBuilder like it's a regular element
     /// <summary>
     /// Creates a basic element in which the pass type specific layout gets nested
     /// </summary>
-    let private passCard = passCardWithBackground None
+    let private passCard = passCardWithBackground None None None None
 
     let private fields =
         article {
-            attr.``class`` "bg-elevation-2 h-12 px-2 py-2"
+            attr.``class`` "bg-elevation-2 h-12"
             div { attr.``class`` "bg-elevation-3 w-full h-full rounded" }
         }
     let private fieldsRow' fields =
         article {
-            attr.``class`` "h-12 px-2 py-2"
+            attr.``class`` "h-12"
             div {
                 attr.``class`` "w-full h-full rounded"
                 
                 cond fields (function
-                        | Some fields ->
-                            forEach fields (fun {value=value} ->
-                                p {
-                                    value |> toText
-                                })
-                        | None ->
-                            empty ())
+                    | Some fields ->
+                        forEach fields (fun {value=value;label=label} ->
+                            concat {
+                                fieldLabel label
+                                fieldValue value
+                            })
+                    | None ->
+                        empty ())
             }
         }
 
@@ -182,7 +225,7 @@ module Elements =
                 headerFieldsRow "Boarding pass"
                 // Primary fields
                 article {
-                    attr.``class`` "bg-elevation-2 flex justify-between h-20 px-2 py-1"
+                    attr.``class`` "bg-elevation-2 flex justify-between h-20"
                     div { attr.``class`` "aspect-video bg-elevation-3 rounded" }
                     div { attr.``class`` "aspect-video bg-elevation-3 rounded" }
                 }
@@ -196,7 +239,7 @@ module Elements =
             (section {
                 // Footer
                 article {
-                    attr.``class`` "bg-elevation-2 h-8 px-2 py-1"
+                    attr.``class`` "bg-elevation-2 h-8"
                     div { attr.``class`` "bg-elevation-3 w-full h-full rounded" }
                 }
 
@@ -210,7 +253,7 @@ module Elements =
 
                 // Primary fields
                 article {
-                    attr.``class`` "bg-elevation-2 rounded h-32 py-1"
+                    attr.``class`` "bg-elevation-2 rounded h-32"
 
                     div {
                         // Strip image
@@ -227,7 +270,10 @@ module Elements =
 
     let eventTicketWithBackgroundImage
         ({ pass = (EventTicket ({ logoText = logoText
-                                  barcode = barcode },
+                                  barcode = barcode
+                                  backgroundColor = backgroundColor
+                                  foregroundColor = foregroundColor
+                                  labelColor = labelColor },
                                 { headerFields = headers
                                   primaryFields = primaryFields
                                   secondaryFields = secondaryFields
@@ -238,43 +284,48 @@ module Elements =
         =
         passCardWithBackground
             (Some backgroundImage)
+            foregroundColor
+            backgroundColor
+            labelColor
             (section {
                 headerFieldsRow' logo logoText headers
 
                 article {
-                    attr.``class`` "rounded h-32 py-1"
+                    attr.``class`` "rounded mb-3"
 
                     div {
-                        attr.``class`` "flex gap-1 h-full w-full p-1"
+                        attr.``class`` "flex gap-3 h-full w-full"
 
                         div {
-                            attr.``class`` "flex flex-col gap-1 h-full w-full p-1"
+                            attr.``class`` "flex flex-col gap-3 h-full w-full"
                             div {
-                                attr.``class`` "h-2/3 w-full p-1"
+                                attr.``class`` "h-2/3 w-full"
                                 cond primaryFields (function
                                     | Some fields ->
-                                        forEach fields (fun {value=value} ->
-                                            p {
-                                                value |> toText
+                                        forEach fields (fun {value=value;label=label} ->
+                                            concat {
+                                                fieldLabel label
+                                                fieldValue value
                                             })
                                     | None ->
                                         empty())
                             }
                             div {
-                                attr.``class`` "h-1/3 w-full p-1"
+                                attr.``class`` "h-1/3 w-full"
                                 cond secondaryFields (function
                                     | Some fields ->
-                                        forEach fields (fun {value=value} ->
-                                            p {
-                                                value |> toText
-                                            })
+                                        forEach fields (fun {value=value;label=label} ->
+                                            concat {
+                                                fieldLabel label
+                                                fieldValue value
+                                                })
                                     | None ->
                                         empty())
                             }
                         }
 
                         img {
-                            attr.``class`` "h-full rounded-lg"
+                            attr.``class`` "w-1/3 aspect-auto rounded-lg"
 
                             base64 |> createPngDataUrl |> attr.src
                         }
@@ -297,7 +348,7 @@ module Elements =
 
                 // Primary fields
                 article {
-                    attr.``class`` "bg-elevation-2 rounded h-32 py-1"
+                    attr.``class`` "bg-elevation-2 rounded h-32"
 
                     div {
                         // Strip image
@@ -319,11 +370,11 @@ module Elements =
                 headerFieldsRow "Generic pass"
 
                 article {
-                    attr.``class`` "bg-elevation-2 rounded h-32 py-1"
+                    attr.``class`` "bg-elevation-2 rounded h-32"
 
                     div {
-                        attr.``class`` "flex gap-1 bg-elevation-3 h-full w-full p-1"
-                        div { attr.``class`` "gap-1 bg-elevation-4 h-full w-full p-1 rounded-lg" }
+                        attr.``class`` "flex gap-1 bg-elevation-3 h-full w-full"
+                        div { attr.``class`` "gap-1 bg-elevation-4 h-full w-full rounded-lg" }
                         div { attr.``class`` "h-full aspect-[3/4] bg-elevation-4 rounded-lg" }
                     }
                 }
