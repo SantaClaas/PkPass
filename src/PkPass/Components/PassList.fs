@@ -44,9 +44,9 @@ type PassList() =
                         | PassPackage.EventTicket package ->
                             match package.images with
                             | EventTicketImages(commonImages, EventTicketImageOption.Other (backgroundImage, thumbnail)) ->
-                                eventTicketWithBackgroundImage backgroundImage thumbnail
+                                eventTicketWithBackgroundImage package backgroundImage thumbnail
                             | EventTicketImages(commonImages, EventTicketImageOption.StripImage eventTicketImageOption) ->
-                                eventTicketWithStripImage ()
+                                eventTicketWithStripImage package
                                
                         |> listItem
                         ))

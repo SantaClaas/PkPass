@@ -36,6 +36,7 @@ module TextAlignment =
         | "PKTextAlignmentNatural" -> Some TextAlignment.Natural
         | _ -> None
 
+[<RequireQualifiedAccess>]
 type FieldValue =
     | LocalizableString of LocalizableString
     | Date of DateTimeOffset
