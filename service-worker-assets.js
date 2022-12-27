@@ -33,7 +33,7 @@
       "url": "_framework\/icudt.dat"
     },
     {
-      "hash": "sha256-\/oUEyDCiLdi0BVkJnc1o5m5bB86ez2t89VueSyJeT8E=",
+      "hash": "sha256-iyVarMpKix1P2gy9sstW2w7HP\/n\/IoAcFMEJRqMLa\/Q=",
       "url": "_framework\/blazor.boot.json"
     },
     {
@@ -157,7 +157,7 @@
       "url": "_framework\/netstandard.dll"
     },
     {
-      "hash": "sha256-jvx1l9H7cY4q4\/B9o3RAk0d6LSpbcZf8Jy3cBeAUZ1M=",
+      "hash": "sha256-k9Wg+JUx8dC1KYigKSBqNHAwIwnjYe2kNbKSmnmXrXM=",
       "url": "_framework\/PkPass.dll"
     },
     {
@@ -253,7 +253,7 @@
       "url": "_framework\/System.ObjectModel.dll"
     },
     {
-      "hash": "sha256-7w6A0cWXdEWYlIWrNcp7tkgo0ZuXwh53KatpQazn+6I=",
+      "hash": "sha256-vUsw8JwGMbYXxHRpeQ7bBPEf0tNEUN+0i7fDqxeFNnA=",
       "url": "_framework\/System.Private.CoreLib.dll"
     },
     {
@@ -485,5 +485,5 @@
       "url": "splash.icon.png"
     }
   ],
-  "version": "ajeERGPM"
+  "version": "1sDd+JYR"
 };
