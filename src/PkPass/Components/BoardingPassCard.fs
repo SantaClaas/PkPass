@@ -30,7 +30,7 @@ module Elements =
             { value=value }
             =
             div {
-                attr.``class`` "bg-elevation-3 w-full text-end h-7 align-middle"
+                attr.``class`` "w-full text-end h-7 align-middle"
 
                 p {
                     attr.``class`` "align-middle"
@@ -40,10 +40,10 @@ module Elements =
             }
             
         header {
-            attr.``class`` "bg-elevation-2 h-12 px-2 pt-2 pb-1 w-full flex justify-between items-center"
+            attr.``class`` "h-12 px-2 pt-2 pb-1 w-full flex justify-between items-center"
 
             div {
-                attr.``class`` "bg-elevation-3 w-full h-7 align-middle"
+                attr.``class`` "w-full h-7 align-middle"
 
                 img {
                     attr.``class`` "h-full aspect-auto"
@@ -54,7 +54,7 @@ module Elements =
             cond logoText (function
                 | Some (LocalizableString localizableString) ->
                     div {
-                        attr.``class`` "bg-elevation-3 w-full text-center h-7 align-middle"
+                        attr.``class`` "w-full text-center h-7 align-middle"
 
                         p {
                             attr.``class`` "align-middle"
@@ -113,16 +113,16 @@ module Elements =
         }
     let private barcode' (Barcode(alternateText, barcodeFormat, message, _)) =
         article {
-            attr.``class`` "bg-elevation-2 px-2 pb-2 pt-1"
+            attr.``class`` "px-2 pb-2 pt-1"
 
             div {
-                attr.``class`` "bg-elevation-3 rounded p-3"
+                attr.``class`` "rounded p-3"
                 
                 cond barcodeFormat (function
                     | Qr ->
                         let (Base64 base64) = Barcode.createQrCode message
                         img {
-                            attr.``class`` "aspect-square w-60 bg-elevation-4 m-auto rounded-xl"
+                            attr.``class`` "aspect-square w-60 m-auto rounded-xl"
                             attr.alt alternateText
                             base64 |> createPngDataUrl |> attr.src
                         })
@@ -136,7 +136,7 @@ module Elements =
         =
         article {
             attr.``class``
-                "origin-top transition-transform scale-[var(--scale)] bg-elevation-1 rounded-lg aspect-[1/1.62] \
+                "origin-top transition-transform scale-[var(--scale)] rounded-lg aspect-[1/1.62] \
                  overflow-hidden flex flex-col justify-between mb-10 shadow-xl text-emphasis-high"
 
             match backgroundImage with
@@ -160,9 +160,9 @@ module Elements =
         }
     let private fieldsRow' fields =
         article {
-            attr.``class`` "bg-elevation-2 h-12 px-2 py-2"
+            attr.``class`` "h-12 px-2 py-2"
             div {
-                attr.``class`` "bg-elevation-3 w-full h-full rounded"
+                attr.``class`` "w-full h-full rounded"
                 
                 cond fields (function
                         | Some fields ->
@@ -242,15 +242,15 @@ module Elements =
                 headerFieldsRow' logo logoText headers
 
                 article {
-                    attr.``class`` "bg-elevation-2 rounded h-32 py-1"
+                    attr.``class`` "rounded h-32 py-1"
 
                     div {
-                        attr.``class`` "flex gap-1 bg-elevation-3 h-full w-full p-1"
+                        attr.``class`` "flex gap-1 h-full w-full p-1"
 
                         div {
-                            attr.``class`` "flex flex-col gap-1 bg-elevation-4 h-full w-full p-1"
+                            attr.``class`` "flex flex-col gap-1 h-full w-full p-1"
                             div {
-                                attr.``class`` "bg-elevation-6 h-2/3 w-full p-1"
+                                attr.``class`` "h-2/3 w-full p-1"
                                 cond primaryFields (function
                                     | Some fields ->
                                         forEach fields (fun {value=value} ->
@@ -261,7 +261,7 @@ module Elements =
                                         empty())
                             }
                             div {
-                                attr.``class`` "bg-elevation-6 h-1/3 w-full p-1"
+                                attr.``class`` "h-1/3 w-full p-1"
                                 cond secondaryFields (function
                                     | Some fields ->
                                         forEach fields (fun {value=value} ->
@@ -274,7 +274,7 @@ module Elements =
                         }
 
                         img {
-                            attr.``class`` "h-full bg-elevation-4 rounded-lg"
+                            attr.``class`` "h-full rounded-lg"
 
                             base64 |> createPngDataUrl |> attr.src
                         }
