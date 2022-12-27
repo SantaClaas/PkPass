@@ -132,7 +132,10 @@ module Elements =
                         let (Base64 base64) = createQrCode message
                         img {
                             attr.``class`` "aspect-square w-60 m-auto rounded-xl"
-                            attr.alt alternateText
+                            alternateText
+                            |> Option.defaultValue (sprintf """A QR code for the pass with the message or value '%s'.""" message)
+                            |> attr.alt
+                            
                             base64 |> createPngDataUrl |> attr.src
                         })
             }
