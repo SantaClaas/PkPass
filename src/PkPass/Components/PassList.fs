@@ -1,6 +1,5 @@
 ﻿namespace PkPass.Components
 
-open System
 open Bolero
 open Microsoft.AspNetCore.Components
 open Microsoft.JSInterop
@@ -10,6 +9,7 @@ open PkPass.Components.Elements
 open PkPass.LoadPass
 open PkPass.PassKit.Images
 open PkPass.PassKit.Package
+open PkPass.Components.EventTicket
 
 type PassList() =
     inherit ElmishComponent<Result<PassPackage, LoadPassError> array, unit>()
