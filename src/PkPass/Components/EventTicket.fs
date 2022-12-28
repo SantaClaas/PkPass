@@ -81,7 +81,7 @@ let fieldLabel (label: LocalizableString option) =
 
 let fieldValue (value: FieldValue) =
     p {
-        // attr.``class`` "text-lg"
+        attr.``class`` "leading-tight"
 
         value |> toText
     }
@@ -95,7 +95,7 @@ let private headerField ({ value = value; label = label }: Field) =
 
 let fieldsRow' fields =
     article {
-        attr.``class`` "flex gap-3 mb-3"
+        attr.``class`` "grid grid-cols-3 gap-3 mb-3 text-lg"
 
         cond fields (function
             | Some fields ->
