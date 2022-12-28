@@ -74,14 +74,14 @@ let fieldLabel (label: LocalizableString option) =
     cond label (function
         | Some (LocalizableString localizableString) ->
             p {
-                attr.``class`` "text-[var(--pass-label-color)] text-sm font-bold leading-none"
+                attr.``class`` "text-[var(--pass-label-color)] text-xs font-bold leading-none"
                 localizableString
             }
         | None -> empty ())
 
 let fieldValue (value: FieldValue) =
     p {
-        attr.``class`` "text-lg"
+        // attr.``class`` "text-lg"
 
         value |> toText
     }
