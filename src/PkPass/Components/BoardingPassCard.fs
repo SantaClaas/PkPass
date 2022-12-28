@@ -3,6 +3,7 @@
 open FSharp.Core
 open Bolero.Html
 open PkPass.Components.EventTicket
+open PkPass.PassKit.Barcode
 open PkPass.PassKit.Deserialization
 open PkPass.PassKit.Images
 open PkPass.PassKit.Package
@@ -146,6 +147,21 @@ module Elements =
                                  auxiliaryFields = auxiliaryFields })
            images = (GenericPassImages (CommonImages (logo, _), thumbnail)) }: GenericPassPackage)
         =
+        match barcode with
+        | Some bar ->
+            match bar with
+            | Barcode(alternateText, barcodeFormat, message, messageEncoding) ->
+                // System.Text.Encoding.GetEncoding()
+                let a = System.Text.Encoding.UTF8.GetBytes message
+                a
+                |> messageEncoding.GetString
+                |> printfn "☃️%s"
+
+                a
+                |> System.Text.Encoding.GetEncoding("iso-8859-1").GetString
+                |> printfn "⛷️%s"
+        | None -> ()
+        
         passCardWithBackground
             None
             foregroundColor
@@ -179,7 +195,15 @@ module Elements =
                 fieldsRow' secondaryFields
                 fieldsRow' auxiliaryFields
             })
-            (section { renderBarcode () })
+            (cond barcode (function
+                | Some barcode ->
+                    section {
+                        div {
+                            attr.``class`` "aspect-square w-56 m-auto rounded-xl"
+                            barcode' barcode   
+                        }
+                    }
+                | None -> empty ()))
     // empty ()
 
 

@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
-    <Version>0.9.0</Version>
+    <Version>0.10.0</Version>
   </PropertyGroup>
   <ItemGroup>
     <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
@@ -30,6 +30,7 @@
     <Compile Include="Interop\Document.fs" />
     <Compile Include="LoadPass.fs" />
     <Compile Include="Events.fs" />
+    <Compile Include="TestAztec.fs" />
     <Compile Include="Components\FilledButton.fs" />
     <Compile Include="Components\OutlinedInput.fs" />
     <Compile Include="Components\VersionInformation.fs" />
@@ -52,5 +53,6 @@
     <PackageReference Include="System.Net.Http.Json" Version="7.0.0" />
     <!-- For QR code generation. Might think about adding ZXing dependency for Aztec and other barcode formats-->
     <PackageReference Include="QRCoder" Version="1.4.3" />
+    <PackageReference Include="ZXing.Net" Version="0.16.8" />
   </ItemGroup>
 </Project>
