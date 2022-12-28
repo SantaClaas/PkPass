@@ -12,6 +12,7 @@ open PkPass.PassKit.Images
 open PkPass.PassKit.Package
 
 let createPngDataUrl base64String = $"data:image/png;base64,{base64String}"
+
 let passCardWithBackground
     (backgroundImage: BackgroundImage option)
     (foregroundColor: CssColor option)
@@ -20,150 +21,158 @@ let passCardWithBackground
     (fieldsSection: Node)
     (barcodeSection: Node)
     =
-    let toVariableString variableName (CssColor color) = $"{variableName}: {color};"        
-    
-    let foregroundVariable = foregroundColor
-                             |> Option.map (toVariableString "--pass-foreground")
-    let backgroundVariable = backgroundColor
-                             |> Option.map (toVariableString "--pass-background")
-    let labelColorVariable = labelColor
-                             |> Option.map (toVariableString "--pass-label-color")
+    let toVariableString variableName (CssColor color) = $"{variableName}: {color};"
 
-    let append (string : string) (state: StringBuilder) =
-        state.Append string
-        
+    let foregroundVariable =
+        foregroundColor |> Option.map (toVariableString "--pass-foreground")
+
+    let backgroundVariable =
+        backgroundColor |> Option.map (toVariableString "--pass-background")
+
+    let labelColorVariable =
+        labelColor |> Option.map (toVariableString "--pass-label-color")
+
+    let append (string: string) (state: StringBuilder) = state.Append string
+
     let appendBackgroundImage (BackgroundImage (Base64 base64String)) state =
         append
-            (base64String 
-            |> createPngDataUrl
-            |> Printf.sprintf """background-image: url("%s");""")
+            (base64String
+             |> createPngDataUrl
+             |> Printf.sprintf """background-image: url("%s");""")
             state
-        
+
     let style =
         StringBuilder()
-        |> Option.foldBack append foregroundVariable 
+        |> Option.foldBack append foregroundVariable
         |> Option.foldBack append backgroundVariable
         |> Option.foldBack append labelColorVariable
         |> Option.foldBack appendBackgroundImage backgroundImage
-                
+
     article {
         attr.``class``
             "origin-top transition-transform scale-[var(--scale)] aspect-[1/1.62] \
              overflow-hidden shadow-xl rounded-lg \
              flex flex-col gap-3 justify-between \
-             text-emphasis-high text-[var(--pass-foreground)] p-3"
-        
+             text-emphasis-high bg-[var(--pass-background)] text-[var(--pass-foreground)] p-3"
+
         if style.Length <> 0 then
-            style
-            |> string
-            |> attr.style
-        else attr.empty ()
+            style |> string |> attr.style
+        else
+            attr.empty ()
 
         fieldsSection
         barcodeSection
     }
-    
+
 let private toText value =
     cond value (function
-    | FieldValue.LocalizableString (LocalizableString value) ->
-        value |> text
-    | FieldValue.Date date ->
-        date.ToLocalTime() |> string |> text
-    | FieldValue.Number number ->
-        number |> string |> text)
+        | FieldValue.LocalizableString (LocalizableString value) -> value |> text
+        | FieldValue.Date date -> date.ToLocalTime() |> string |> text
+        | FieldValue.Number number -> number |> string |> text)
 
-let private fieldLabel (label : LocalizableString option) =
-    cond label (function  
+let fieldLabel (label: LocalizableString option) =
+    cond label (function
         | Some (LocalizableString localizableString) ->
             p {
-                attr.``class`` "text-[var(--pass-label-color)] text-sm font-bold tracking-wider leading-none"
-                localizableString    
+                attr.``class`` "text-[var(--pass-label-color)] text-sm font-bold leading-none"
+                localizableString
             }
-        | None -> empty())
+        | None -> empty ())
 
-let private fieldValue (value : FieldValue) =
+let fieldValue (value: FieldValue) =
     p {
         attr.``class`` "text-lg"
-      
+
         value |> toText
     }
-   
-let private headerField
-    ({ value=value
-       label=label } : Field)
-    =
+
+let private headerField ({ value = value; label = label }: Field) =
     div {
         attr.``class`` "w-full text-end align-middle"
         fieldLabel label
         fieldValue value
     }
 
-let private fieldsRow' fields =
+let fieldsRow' fields =
     article {
-        attr.``class`` "h-12"
-        div {
-            attr.``class`` "w-full h-full rounded"
-            
-            cond fields (function
-                | Some fields ->
-                    forEach fields (fun {value=value;label=label} ->
-                        concat {
-                            fieldLabel label
-                            fieldValue value
-                        })
-                | None ->
-                    empty ())
-        }
+        attr.``class`` "flex gap-3 mb-3"
+
+        cond fields (function
+            | Some fields ->
+                forEach fields (fun { value = value; label = label } ->
+                    span {
+                        attr.``class`` "inline-block"
+                        fieldLabel label
+                        fieldValue value
+                    })
+            | None -> empty ())
     }
-let private headerFieldsRow' (Logo (Base64 base64)) (logoText: LocalizableString option) (headerFields: Field list option) = 
+
+let headerFieldsRow'
+    (Logo (Base64 base64))
+    (logoText: LocalizableString option)
+    (headerFields: Field list option)
+    =
     header {
         attr.``class`` "h-14 w-full flex justify-between items-center"
 
         img {
             attr.``class`` "h-full aspect-auto"
-            attr.alt "A thumbnail for the event ticket probably showing the poster or something related to the event. A proper alternate text is not provided."
+
+            attr.alt
+                "A thumbnail for the event ticket probably showing the poster or something related to the event. A proper alternate text is not provided."
+
             base64 |> createPngDataUrl |> attr.src
         }
-        
 
         cond logoText (function
             | Some (LocalizableString localizableString) ->
                 div {
-                    attr.``class`` "w-full text-center h-7 align-middle"
+                    attr.``class`` "w-full"
 
                     p {
-                        attr.``class`` "align-middle"
+                        attr.``class`` "leading-none"
                         localizableString
                     }
                 }
             | None -> empty ())
-        
+
         cond headerFields (function
-            | Some fields ->
-                forEach fields headerField
-            | None ->
-                empty ())
+            | Some fields -> forEach fields headerField
+            | None -> empty ())
     }
-let private barcode' (Barcode(alternateText, barcodeFormat, message, _)) =
+
+let private barcode' (Barcode (alternateText, barcodeFormat, message, _)) =
     article {
 
         div {
             attr.``class`` "rounded"
-            
+
             cond barcodeFormat (function
                 | Qr ->
                     let (Base64 base64) = createQrCode message
+
                     img {
                         attr.``class`` "aspect-square w-60 m-auto rounded-xl"
+
                         alternateText
-                        |> Option.defaultValue (sprintf """A QR code for the pass with the message or value '%s'.""" message)
+                        |> Option.defaultValue (
+                            sprintf """A QR code for the pass with the message or value '%s'.""" message
+                        )
                         |> attr.alt
-                        
+
                         base64 |> createPngDataUrl |> attr.src
                     })
-        }
     }
-    
+}
+
+let renderThumbnail (Thumbnail (Base64 base64)) =
+    img {
+        attr.``class`` "w-1/3 h-full rounded-lg"
+
+        base64 |> createPngDataUrl |> attr.src
+    }
+
 let eventTicketWithBackgroundImage
     ({ pass = (EventTicket ({ logoText = logoText
                               barcode = barcode
@@ -176,7 +185,8 @@ let eventTicketWithBackgroundImage
                               auxiliaryFields = auxiliaryFields }))
        images = (EventTicketImages (CommonImages (logo, _), _)) }: EventTicketPassPackage)
     backgroundImage
-    (Thumbnail (Base64 base64))
+    //TODO different event pass options in one function
+    thumbnail
     =
     passCardWithBackground
         (Some backgroundImage)
@@ -194,37 +204,35 @@ let eventTicketWithBackgroundImage
 
                     div {
                         attr.``class`` "flex flex-col gap-3 h-full w-full"
+
                         div {
                             attr.``class`` "h-2/3 w-full"
+
                             cond primaryFields (function
                                 | Some fields ->
-                                    forEach fields (fun {value=value;label=label} ->
+                                    forEach fields (fun { value = value; label = label } ->
                                         concat {
                                             fieldLabel label
                                             fieldValue value
                                         })
-                                | None ->
-                                    empty())
+                                | None -> empty ())
                         }
+
                         div {
                             attr.``class`` "h-1/3 w-full"
+
                             cond secondaryFields (function
                                 | Some fields ->
-                                    forEach fields (fun {value=value;label=label} ->
+                                    forEach fields (fun { value = value; label = label } ->
                                         concat {
                                             fieldLabel label
                                             fieldValue value
-                                            })
-                                | None ->
-                                    empty())
+                                        })
+                                | None -> empty ())
                         }
                     }
 
-                    img {
-                        attr.``class`` "w-1/3 aspect-auto rounded-lg"
-
-                        base64 |> createPngDataUrl |> attr.src
-                    }
+                    renderThumbnail thumbnail
                 }
             }
 
@@ -232,7 +240,5 @@ let eventTicketWithBackgroundImage
         })
 
         (cond barcode (function
-            | Some barcode ->
-                section { barcode' barcode}
-            | None ->
-                empty ()))
+            | Some barcode -> section { barcode' barcode }
+            | None -> empty ()))

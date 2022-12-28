@@ -47,6 +47,11 @@ type PassList() =
                                 eventTicketWithBackgroundImage package backgroundImage thumbnail
                             | EventTicketImages(commonImages, EventTicketImageOption.StripImage eventTicketImageOption) ->
                                 eventTicketWithStripImage package
+                        | PassPackage.GenericPass genericPassPackage ->
+                            genericPass genericPassPackage
+                        | package ->
+                                System.Console.WriteLine $"Package not supported {package.GetType ()} {package}"
+                                empty()
                                
                         |> listItem
                         ))

@@ -3,11 +3,11 @@
 open FSharp.Core
 open Bolero.Html
 open PkPass.Components.EventTicket
+open PkPass.PassKit.Deserialization
+open PkPass.PassKit.Images
+open PkPass.PassKit.Package
 
 module Elements =
-
- 
-
     let private headerFieldsRow (logoText: string) =
         header {
             attr.``class`` "bg-elevation-2 h-12 w-full flex justify-between items-center mb-3"
@@ -40,12 +40,12 @@ module Elements =
             }
         }
 
-    let private barcode () =
+    let private renderBarcode () =
         article {
 
             div {
-                attr.``class`` "bg-elevation-3 rounded p-3"
-                div { attr.``class`` "aspect-square w-60 bg-elevation-4 m-auto rounded-xl" }
+                attr.``class`` "rounded p-3"
+                div { attr.``class`` "aspect-square w-60 m-auto rounded-xl" }
             }
         }
 
@@ -86,7 +86,7 @@ module Elements =
                     div { attr.``class`` "bg-elevation-3 w-full h-full rounded" }
                 }
 
-                barcode ()
+                renderBarcode ()
             })
 
     let coupon package =
@@ -109,7 +109,7 @@ module Elements =
                 fields
             })
 
-            (section { barcode () })
+            (section { renderBarcode () })
 
     let eventTicketWithStripImage package =
         passCard
@@ -132,27 +132,57 @@ module Elements =
                 fields
             })
 
-            (section { barcode () })
+            (section { renderBarcode () })
 
-    let genericPass package =
-        passCard
+    let genericPass
+        ({ pass = GenericPass ({ logoText = logoText
+                                 barcode = barcode
+                                 backgroundColor = backgroundColor
+                                 foregroundColor = foregroundColor
+                                 labelColor = labelColor },
+                               { headerFields = headers
+                                 primaryFields = primaryFields
+                                 secondaryFields = secondaryFields
+                                 auxiliaryFields = auxiliaryFields })
+           images = (GenericPassImages (CommonImages (logo, _), thumbnail)) }: GenericPassPackage)
+        =
+        passCardWithBackground
+            None
+            foregroundColor
+            backgroundColor
+            labelColor
             (section {
-                headerFieldsRow "Generic pass"
+                headerFieldsRow' logo logoText headers
 
                 article {
-                    attr.``class`` "bg-elevation-2 rounded h-32"
+                    attr.``class`` "rounded h-32"
 
                     div {
-                        attr.``class`` "flex gap-1 bg-elevation-3 h-full w-full"
-                        div { attr.``class`` "gap-1 bg-elevation-4 h-full w-full rounded-lg" }
-                        div { attr.``class`` "h-full aspect-[3/4] bg-elevation-4 rounded-lg" }
+                        attr.``class`` "flex gap-3 h-full w-full"
+                        div {
+                            attr.``class`` "h-full w-full rounded-lg"
+                            cond primaryFields (function
+                                | Some fields ->
+                                    forEach fields (fun { value = value; label = label } ->
+                                        span {
+                                            fieldLabel label
+                                            fieldValue value
+                                        })
+                                | None -> empty ())
+                        }
+                        
+                        renderThumbnail thumbnail
                     }
                 }
 
-                fields
+                
+                fieldsRow' secondaryFields
+                fieldsRow' auxiliaryFields
             })
+            (section { renderBarcode () })
+    // empty ()
 
-            (section { barcode () })
+
 
     // Store card and coupon basically have the same layout
     let storeCard = coupon

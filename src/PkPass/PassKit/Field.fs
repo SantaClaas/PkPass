@@ -168,7 +168,10 @@ let rec private deserializeFieldsInternal (reader: Utf8JsonReader byref) (result
         Result.Ok resultFields
     else
         match reader.TokenType with
-        | JsonTokenType.EndArray -> Result.Ok resultFields
+        | JsonTokenType.EndArray ->
+            resultFields
+            |> List.rev
+            |> Result.Ok 
         | JsonTokenType.StartObject ->
             match deserializeField &reader with
             | Result.Ok field -> deserializeFieldsInternal &reader (field :: resultFields)

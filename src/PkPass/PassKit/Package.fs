@@ -36,13 +36,11 @@ type GenericPassPackage = {
     fileName: FileName
     pass: GenericPass
     images: GenericPassImages
-    
 }
 type StoreCardPassPackage ={
     fileName: FileName
     pass: StoreCard
     images: StoreCardImages
-    
 }
 
 [<RequireQualifiedAccess>]

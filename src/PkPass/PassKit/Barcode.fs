@@ -87,7 +87,10 @@ let rec private deserializeBarcodesInternal (reader: Utf8JsonReader byref) (resu
         Result.Ok resultFields
     else
         match reader.TokenType with
-        | JsonTokenType.EndArray -> Result.Ok resultFields
+        | JsonTokenType.EndArray ->
+            resultFields
+            |> List.rev
+            |> Result.Ok 
         | JsonTokenType.StartObject ->
             match deserializeBarcode &reader with
             | Result.Ok field -> deserializeBarcodesInternal &reader (field :: resultFields)
