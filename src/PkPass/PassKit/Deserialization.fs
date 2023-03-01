@@ -1,7 +1,6 @@
 module PkPass.PassKit.Deserialization
 
 open System
-open System.Text
 open System.Text.Json
 open PkPass
 open PkPass.PassKit.Errors

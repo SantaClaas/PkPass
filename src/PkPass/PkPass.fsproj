@@ -10,6 +10,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Order is important in F# 🙂 -->
+    <Compile Include="Result.fs" />
     <Compile Include="Resets.fs" />
     <Compile Include="Extensions.fs" />
     <Compile Include="PassKit\Errors.fs" />
@@ -19,6 +20,7 @@
     <Compile Include="PassKit\PassStructure.fs" />
     <Compile Include="PassKit\Deserialization.fs" />
     <Compile Include="PassKit\Package.fs" />
+    <Compile Include="PassKit\PassDefinition.fs" />
     <Compile Include="Attributes.fs" />
     <Compile Include="Interop\FileSystemFileHandle.fs" />
     <Compile Include="Interop\LocalStorage.fs" />

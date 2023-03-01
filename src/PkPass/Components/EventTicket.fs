@@ -36,7 +36,7 @@ let passCardWithBackground
 
     let append (string: string) (state: StringBuilder) = state.Append string
 
-    let appendBackgroundImage (BackgroundImage(Base64 base64String)) state =
+    let appendBackgroundImage (BackgroundImage (Base64 base64String)) state =
         append
             (base64String
              |> createPngDataUrl
@@ -68,13 +68,13 @@ let passCardWithBackground
 
 let private toText value =
     cond value (function
-        | FieldValue.LocalizableString(LocalizableString value) -> value |> text
+        | FieldValue.LocalizableString (LocalizableString value) -> value |> text
         | FieldValue.Date date -> date.ToLocalTime() |> string |> text
         | FieldValue.Number number -> number |> string |> text)
 
 let fieldLabel (label: LocalizableString option) =
     cond label (function
-        | Some(LocalizableString localizableString) ->
+        | Some (LocalizableString localizableString) ->
             p {
                 attr.``class`` "text-[var(--pass-label-color)] text-xs font-bold leading-none"
                 localizableString
@@ -110,7 +110,7 @@ let fieldsRow' fields =
             | None -> empty ())
     }
 
-let headerFieldsRow' (Logo(Base64 base64)) (logoText: LocalizableString option) (headerFields: Field list option) =
+let headerFieldsRow' (Logo (Base64 base64)) (logoText: LocalizableString option) (headerFields: Field list option) =
     header {
         attr.``class`` "h-14 w-full flex justify-between items-center"
 
@@ -124,7 +124,7 @@ let headerFieldsRow' (Logo(Base64 base64)) (logoText: LocalizableString option) 
         }
 
         cond logoText (function
-            | Some(LocalizableString localizableString) ->
+            | Some (LocalizableString localizableString) ->
                 div {
                     attr.``class`` "w-full"
 
@@ -140,23 +140,23 @@ let headerFieldsRow' (Logo(Base64 base64)) (logoText: LocalizableString option) 
             | None -> empty ())
     }
 
-let barcode' (Barcode(alternateText, barcodeFormat, message, messageEncoding)) =
+// let barcode' (Barcode(alternateText, barcodeFormat, message, messageEncoding)) =
+let barcode' (barcode) =
     article {
 
         div {
             attr.``class`` "rounded"
 
-            cond barcodeFormat (function
+            cond barcode.format (function
                 | Qr ->
-                    let (Base64 base64) = createQrCode message
+                    let (Base64 base64) = createQrCode barcode.message
 
                     img {
                         attr.``class`` "aspect-square w-60 m-auto rounded-xl"
 
-                        alternateText
-                        |> Option.defaultValue (
-                            sprintf """A QR code for the pass with the message or value '%s'.""" message
-                        )
+                        match barcode.alternateText with
+                        | Some (AlternateText text) -> text
+                        | None -> sprintf """A QR code for the pass with the message or value '%s'.""" barcode.message
                         |> attr.alt
 
                         base64 |> createPngDataUrl |> attr.src
@@ -165,14 +165,14 @@ let barcode' (Barcode(alternateText, barcodeFormat, message, messageEncoding)) =
                     let writer = ZXing.Aztec.AztecWriter()
                     // let data = message |> messageEncoding.GetBytes
                     // let matrix = writer.encode (data, ZXing.BarcodeFormat.AZTEC, 500, 500, Map.empty)
-                    let matrix : BitMatrix = writer.encode(message, ZXing.BarcodeFormat.AZTEC, 500, 500)
+                    let matrix: BitMatrix = writer.encode (barcode.message, ZXing.BarcodeFormat.AZTEC, 500, 500)
                     let renderer = SvgRenderer()
                     let render = renderer.Render(matrix, ZXing.BarcodeFormat.AZTEC, System.String.Empty)
                     rawHtml render.Content)
         }
     }
 
-let renderThumbnail (Thumbnail(Base64 base64)) =
+let renderThumbnail (Thumbnail (Base64 base64)) =
     img {
         attr.``class`` "w-1/3 h-full rounded-lg"
 
@@ -180,16 +180,16 @@ let renderThumbnail (Thumbnail(Base64 base64)) =
     }
 
 let eventTicketWithBackgroundImage
-    ({ pass = (EventTicket({ logoText = logoText
-                             barcode = barcode
-                             backgroundColor = backgroundColor
-                             foregroundColor = foregroundColor
-                             labelColor = labelColor },
-                           { headerFields = headers
-                             primaryFields = primaryFields
-                             secondaryFields = secondaryFields
-                             auxiliaryFields = auxiliaryFields }))
-       images = (EventTicketImages(CommonImages(logo, _), _)) }: EventTicketPassPackage)
+    ({ pass = (EventTicket ({ logoText = logoText
+                              barcode = barcode
+                              backgroundColor = backgroundColor
+                              foregroundColor = foregroundColor
+                              labelColor = labelColor },
+                            { headerFields = headers
+                              primaryFields = primaryFields
+                              secondaryFields = secondaryFields
+                              auxiliaryFields = auxiliaryFields }))
+       images = (EventTicketImages (CommonImages (logo, _), _)) }: EventTicketPassPackage)
     backgroundImage
     //TODO different event pass options in one function
     thumbnail

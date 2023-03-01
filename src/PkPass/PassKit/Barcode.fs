@@ -13,14 +13,19 @@ let createQrCode (value: string) =
     use code = new PngByteQRCode(data)
     code.GetGraphic(100) |> Convert.ToBase64String |> Image.Base64
 
-//TODO barcodes in the barcodes array are allowed to have type PKBarcodeFormatCode128 but not the single barcode
 type BarcodeFormat =
     | Qr
     | Pdf417
     | Aztec
+    | Code128
+
+type AlternateText = AlternateText of string
 
 type Barcode =
-    | Barcode of alternateText: string option * format: BarcodeFormat * message: string * messageEncoding: Encoding
+    { alternateText: AlternateText option
+      format: BarcodeFormat
+      message: string
+      messageEncoding: Encoding }
 
 type private BarcodeDeserializationState =
     { alternateText: string option
@@ -43,7 +48,11 @@ let private tryFinishBarcodeDeserialization (state: BarcodeDeserializationState)
         format = Some format
         message = Some message
         messageEncoding = Some messageEncoding } ->
-        Barcode(alternateText, format, message, messageEncoding) |> Result.Ok
+        { Barcode.alternateText = alternateText |> Option.map AlternateText
+          format = format
+          message = message
+          messageEncoding = messageEncoding }
+        |> Result.Ok
 
 let rec private deserializeBarcodeInternal
     (reader: Utf8JsonReader byref)
@@ -87,15 +96,12 @@ let rec private deserializeBarcodesInternal (reader: Utf8JsonReader byref) (resu
         Result.Ok resultFields
     else
         match reader.TokenType with
-        | JsonTokenType.EndArray ->
-            resultFields
-            |> List.rev
-            |> Result.Ok 
+        | JsonTokenType.EndArray -> resultFields |> List.rev |> Result.Ok
         | JsonTokenType.StartObject ->
             match deserializeBarcode &reader with
             | Result.Ok field -> deserializeBarcodesInternal &reader (field :: resultFields)
             | Error error -> Error error
         | otherToken -> UnexpectedToken(otherToken, nameof deserializeBarcode, None) |> Error
-        
-        
+
+
 let deserializeBarcodes (reader: Utf8JsonReader byref) = deserializeBarcodesInternal &reader []
