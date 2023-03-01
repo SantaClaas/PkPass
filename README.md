@@ -5,6 +5,8 @@ Have fun.
 ## Motivation
 Other pass apps look bad so I decided to make my own.
 ## Documentation for pass structure
+https://developer.apple.com/documentation/walletpasses/pass  
+
 https://developer.apple.com/library/archive/documentation/UserExperience/Conceptual/PassKit_PG/YourFirst.html
 https://developer.apple.com/library/archive/documentation/UserExperience/Reference/PassKit_Bundle/Chapters/TopLevel.html#//apple_ref/doc/uid/TP40012026-CH2-SW2
 https://developer.apple.com/library/archive/documentation/UserExperience/Reference/PassKit_Bundle/Chapters/LowerLevel.html#//apple_ref/doc/uid/TP40012026-CH3-SW14
