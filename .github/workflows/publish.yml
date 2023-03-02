@@ -26,7 +26,7 @@ jobs:
     - name: 📦 Restore .NET Tools
       run: dotnet tool restore
     - name: 🔧 Run FAKE build
-      run: dotnet fake run
+      run: dotnet run --project ./build/build.fsproj
 
     # Make app available under https://pass.claas.dev
     - name: 🔀 Create CNAME file
