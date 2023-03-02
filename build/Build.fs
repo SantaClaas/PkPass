@@ -13,15 +13,13 @@ let build arguments =
     |> Context.FakeExecutionContext.Create false "build.fsx"
     |> Context.RuntimeContext.Fake
     |> Context.setExecutionContext
-    
-    
+
     // Target.initEnvironment ()
     let directories =
-        {| artifacts = Path.getFullName  "../artifacts"
+        {| artifacts = Path.getFullName "../artifacts"
            source = Path.getFullName "../src" |}
-           
-    // let a = System.IO.Path.GetFullPath
-    let files = {| project = $"{directories.source}/PkPass/PkPass.fsproj" |}
+
+    let files = {| project = Path.combine directories.source "PkPass/PkPass.fsproj" |}
 
     // Constants for target names
     let targets =
@@ -30,14 +28,15 @@ let build arguments =
            publish = "Publish"
            all = "All" |}
 
-    Target.create targets.clean (fun _ ->
-        !! "src/**/bin" ++ "src/**/obj" ++ "artifacts"
-        |> Shell.cleanDirs)
+    Target.create targets.clean (fun _ -> !! "src/**/bin" ++ "src/**/obj" ++ "artifacts" |> Shell.cleanDirs)
 
 
     Target.create targets.restore (fun _ -> DotNet.restore id files.project)
+
     let setParameters (options: DotNet.PublishOptions) =
-        { options with OutputPath = Some directories.artifacts; Configuration = DotNet.BuildConfiguration.Release}
+        { options with
+            OutputPath = Some directories.artifacts
+            Configuration = DotNet.BuildConfiguration.Release }
 
     let runPublish _ =
         try
