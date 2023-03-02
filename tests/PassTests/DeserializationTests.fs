@@ -3,8 +3,9 @@ module Tests
 open System
 open System.IO
 open System.Text.Json
+open PkPass.PassKit.Deserialization
+open PkPass.PassKit.PassStructure
 open Xunit
-open PkPass.PassKit
 open FsUnit.Xunit
 open FsUnit.CustomMatchers
 
@@ -18,10 +19,10 @@ let ``Can deserialize Cineplex pass JSON with recursion`` () =
         DateTimeOffset(2022, 5, 8, 18, 20, 0, TimeSpan.Zero)
         |> Some
     // Act
-    let data: byte ReadOnlySpan = File.ReadAllBytes fileNamePath
+    let data = File.ReadAllBytes fileNamePath
 
     let mutable reader = Utf8JsonReader data
-    let result = deserializePass &reader None PassDeserializationState.Default
+    let result = deserializePass &reader
     
     // Assert
-    result |> should be (ofCase <@ Result<Pass,DeserializationError>.Ok @>)
+    result |> should be (ofCase <@ DeserializationResult<PassStyle>.Ok @>)

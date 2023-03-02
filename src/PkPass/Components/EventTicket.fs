@@ -101,7 +101,7 @@ let fieldsRow' fields =
 
         cond fields (function
             | Some fields ->
-                forEach fields (fun { value = value; label = label } ->
+                forEach fields (fun ({ value = value; label = label } : Field) ->
                     span {
                         attr.``class`` "inline-block"
                         fieldLabel label
@@ -168,7 +168,12 @@ let barcode' (barcode) =
                     let matrix: BitMatrix = writer.encode (barcode.message, ZXing.BarcodeFormat.AZTEC, 500, 500)
                     let renderer = SvgRenderer()
                     let render = renderer.Render(matrix, ZXing.BarcodeFormat.AZTEC, System.String.Empty)
-                    rawHtml render.Content)
+                    rawHtml render.Content
+                | _ ->
+                    p {
+                        attr.``class`` "text-white"
+                        "This barcode format is not yet supported"
+                    })
         }
     }
 
