@@ -4,7 +4,7 @@ open Fake.IO
 open Fake.IO.FileSystemOperators
 open Fake.IO.Globbing.Operators
 open Fake.Core.TargetOperators
-
+open System
 
 [<EntryPoint>]
 let build arguments =
@@ -14,12 +14,13 @@ let build arguments =
     |> Context.RuntimeContext.Fake
     |> Context.setExecutionContext
     
+    
     // Target.initEnvironment ()
     let directories =
-        {| artifacts = "../artifacts"
-           source = "../src" |}
+        {| artifacts = Path.getFullName  "../artifacts"
+           source = Path.getFullName "../src" |}
            
-           
+    // let a = System.IO.Path.GetFullPath
     let files = {| project = $"{directories.source}/PkPass/PkPass.fsproj" |}
 
     // Constants for target names
