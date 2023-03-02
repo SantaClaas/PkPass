@@ -20,7 +20,9 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         # We use dotnet 6 only because FAKE needs it 🥲
-        dotnet-version: 6.x
+        dotnet-version: | 
+          6.x
+          7.x
     - name: 📦 Restore .NET Tools
       run: dotnet tool restore
     - name: 🔧 Run FAKE build
