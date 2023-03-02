@@ -30,8 +30,10 @@ let build arguments =
 
     Target.create targets.clean (fun _ -> !! "src/**/bin" ++ "src/**/obj" ++ "artifacts" |> Shell.cleanDirs)
 
+    let restore _ =
+        !! "*.fsproj" |> Seq.iter (DotNet.restore id)
 
-    Target.create targets.restore (fun _ -> DotNet.restore id files.project)
+    Target.create targets.restore restore
 
     let setParameters (options: DotNet.PublishOptions) =
         { options with
