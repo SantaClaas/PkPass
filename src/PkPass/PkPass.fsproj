@@ -48,12 +48,13 @@
   <ItemGroup>
     <PackageReference Include="Bolero" Version="0.20.18" />
     <PackageReference Include="Bolero.Build" Version="0.20.18" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="7.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="7.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="7.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="7.0.3" />
     <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
     <PackageReference Include="System.Net.Http.Json" Version="7.0.0" />
     <!-- For QR code generation. Might think about adding ZXing dependency for Aztec and other barcode formats-->
     <PackageReference Include="QRCoder" Version="1.4.3" />
-    <PackageReference Include="ZXing.Net" Version="0.16.8" />
+    <PackageReference Include="ZXing.Net" Version="0.16.9" />
+    <PackageReference Update="FSharp.Core" Version="7.0.200" />
   </ItemGroup>
 </Project>
