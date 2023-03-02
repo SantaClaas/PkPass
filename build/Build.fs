@@ -29,9 +29,10 @@ let build arguments =
            all = "All" |}
 
     Target.create targets.clean (fun _ -> !! "src/**/bin" ++ "src/**/obj" ++ "artifacts" |> Shell.cleanDirs)
-
+    
+    !! "../**/*.fsproj" |> Seq.iter (Trace.logfn "Found project at 👉 %s")
     let restore _ =
-        !! "*.fsproj" |> Seq.iter (DotNet.restore id)
+        !! "../**/*.fsproj" |> Seq.iter (DotNet.restore id)
 
     Target.create targets.restore restore
 
