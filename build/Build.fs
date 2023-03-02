@@ -1,10 +1,10 @@
-﻿open Fake.Core
+﻿open System.IO
+open Fake.Core
 open Fake.DotNet
 open Fake.IO
-open Fake.IO.FileSystemOperators
 open Fake.IO.Globbing.Operators
 open Fake.Core.TargetOperators
-open System
+open System.Text
 
 [<EntryPoint>]
 let build arguments =
@@ -21,6 +21,20 @@ let build arguments =
 
     let files = {| project = Path.combine directories.source "PkPass/PkPass.fsproj" |}
 
+    if files.project |> File.exists |> not then
+        let projects = !! "../**/*.fsproj"
+        let builder = StringBuilder()
+        builder.Append "Could not find project file at " |> ignore
+        builder.AppendLine files.project |> ignore
+        builder.AppendLine "Found projects at:" |> ignore
+
+        for project in projects do
+            builder.AppendLine project |> ignore
+
+        builder |> string |> FileNotFoundException |> raise
+
+
+
     // Constants for target names
     let targets =
         {| clean = "Clean"
@@ -28,9 +42,10 @@ let build arguments =
            publish = "Publish"
            all = "All" |}
 
-    Target.create targets.clean (fun _ -> !! "src/**/bin" ++ "src/**/obj" ++ "artifacts" |> Shell.cleanDirs)
-    
+    Target.create targets.clean (fun _ -> !! "../src/**/bin" ++ "../src/**/obj" ++ "artifacts" |> Shell.cleanDirs)
+    // Had difficulties finding the project on
     !! "../**/*.fsproj" |> Seq.iter (Trace.logfn "Found project at 👉 %s")
+
     let restore _ =
         !! "../**/*.fsproj" |> Seq.iter (DotNet.restore id)
 
